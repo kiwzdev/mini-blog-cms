@@ -71,20 +71,6 @@ export const uploadImages = async (files: File[]) => {
   return data;
 };
 
-// Utility Functions
-export const handleApiError = (error: any) => {
-  if (error.response) {
-    // Server responded with error status
-    throw new Error(error.response.data?.message || "An error occurred");
-  } else if (error.request) {
-    // Request was made but no response received
-    throw new Error("Network error - please try again");
-  } else {
-    // Something else happened
-    throw new Error("An unexpected error occurred");
-  }
-};
-
 export interface ApiResponse<T> {
   success: boolean;
   data: T;

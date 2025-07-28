@@ -101,13 +101,13 @@ export default function MainNavbar() {
           {!session && (
             <>
               <Link
-                href="/sign-in"
+                href="/auth/sign-in"
                 className="text-gray-700 dark:text-gray-100 hover:text-blue-500"
               >
                 Log in
               </Link>
               <Link
-                href="/sign-up"
+                href="/auth/sign-up"
                 className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
               >
                 Sign up

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { connectMongoDB } from "@/lib/db/mongodb";
 import bcrypt from "bcryptjs";
-import User from "@/models/user";
-import handleAPIError from "@/helpers/error";
+import { PrismaClient } from "@prisma/client";
+import handleAPIError from "@/helpers/errorHandling";
+
+const prisma = new PrismaClient();
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,11 +16,13 @@ export async function POST(req: NextRequest) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    await connectMongoDB();
-
     const normalizedEmail = email.toLowerCase();
 
-    const existingEmail = await User.findOne({ email: normalizedEmail });
+    // Check if email already exists
+    const existingEmail = await prisma.user.findUnique({
+      where: { email: normalizedEmail }
+    });
+
     if (existingEmail) {
       return NextResponse.json(
         { message: "Email already exists" },
@@ -27,19 +30,25 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const existingUsername = await User.findOne({ username });
+    // Check if username already exists
+    const existingUsername = await prisma.user.findUnique({
+      where: { username }
+    });
+
     if (existingUsername) {
-      // Username already exists
       return NextResponse.json(
         { message: "Username already exists" },
         { status: 409 }
       );
     }
 
-    await User.create({
-      username,
-      email,
-      password: hashedPassword,
+    // Create new user
+    await prisma.user.create({
+      data: {
+        username,
+        email: normalizedEmail,
+        password: hashedPassword,
+      }
     });
 
     return NextResponse.json({ message: "User created" }, { status: 201 });
@@ -49,5 +58,7 @@ export async function POST(req: NextRequest) {
       { success: false, error: message, code },
       { status }
     );
+  } finally {
+    await prisma.$disconnect();
   }
 }
