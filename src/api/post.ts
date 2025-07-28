@@ -1,6 +1,6 @@
 // API Functions for Social Media App
 
-import { Post } from "@/types";
+import { ICreatePostInput, IUpdatePostInput } from "@/types";
 import axios from "axios";
 
 // For Blog page
@@ -14,28 +14,20 @@ export const getAllPosts = async (params?: {
   return data;
 };
 
-// For User profile page
-export const getUserPosts = async (userId: string) => {
-  const { data } = await axios.get("/api/posts", {
-    params: { userId },
-  });
-  return data;
-};
-
 // For Post detail page - Full Info
-export const getPostDetail = async (slug: string) => {
-  const { data } = await axios.get(`/api/posts/${slug}/detail`);
+export const getPost = async (postId: string) => {
+  const { data } = await axios.get(`/api/posts/${postId}`);
   return data; // PostWithFullDetails
 };
 
 // Post Actions
-export const createPost = async (postData: Post) => {
+export const createPost = async (postData: ICreatePostInput) => {
   const { data } = await axios.post("/api/posts", postData);
   return data;
 };
 
-export const updatePost = async (postData: Post) => {
-  const { data } = await axios.put(`/api/posts/${postData.id}`, postData);
+export const updatePost = async (postId: string, postData: IUpdatePostInput) => {
+  const { data } = await axios.put(`/api/posts/${postId}`, postData);
   return data;
 };
 
@@ -76,13 +68,3 @@ export interface ApiResponse<T> {
   data: T;
   message?: string;
 }
-
-// React Query Keys (สำหรับใช้กับ React Query/TanStack Query)
-export const queryKeys = {
-  posts: ["posts"] as const,
-  post: (id: string) => ["posts", id] as const,
-  userPosts: (userId: string) => ["posts", "user", userId] as const,
-  comments: (postId: string) => ["posts", postId, "comments"] as const,
-  likes: (postId: string) => ["posts", postId, "likes"] as const,
-  user: ["user"] as const,
-} as const;

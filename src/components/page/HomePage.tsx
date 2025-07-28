@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowRight, Edit3, Globe, Zap } from "lucide-react";
 import { useSession } from "next-auth/react";
-import MainNavbar from "../layout/MainNavbar";
+import MainNavbar from "../layout/Navbar";
 
 export default function HomePageContent() {
   const { data: session } = useSession();

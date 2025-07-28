@@ -62,6 +62,7 @@ model Post {
   slug        String   @unique
   content     String
   contentType String   @default("markdown") // "markdown" หรือ "richtext"
+  category    String?
   excerpt     String?
   coverImage  String?
   published   Boolean  @default(false)

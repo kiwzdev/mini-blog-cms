@@ -62,7 +62,7 @@ export default function ResetPasswordPage() {
       }
 
       toast.success("Password reset successful");
-      router.push("/sign-in");
+      router.push("/auth/sign-in");
     } catch (err: any) {
       setError(err.message || "Failed to reset password");
       toast.error(err.message || "Failed to reset password");

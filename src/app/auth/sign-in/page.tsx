@@ -29,13 +29,16 @@ export default function SignInPage() {
 
       if (res?.error === "EMAIL_NOT_VERIFIED") {
         toast.custom((t) => <EmailVerifyToast t={t} email={formData.email} />);
+        return;
       } else if (res?.error === "INVALID_PASSWORD") {
         toast.error("Invalid password");
+        return;
       } else if (res?.error === "USER_NOT_FOUND") {
         toast.error("User not found");
+        return;
       }
       toast.success("Sign in successful");
-      router.push("/todos");
+      router.push("/");
     } catch (err) {
       setError("Something went wrong");
       toast.error("Something went wrong, " + err);

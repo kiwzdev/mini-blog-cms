@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import PostCard from "@/components/blog/post/PostCard";
 import PostCardSkeleton from "@/components/blog/post/PostCardSkeleton";
-import MainNavbar from "@/components/layout/MainNavbar";
+import MainNavbar from "@/components/layout/Navbar";
 import { formatDate } from "@/lib/utils";
 import {
   Calendar,

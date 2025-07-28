@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import PostCardSkeleton from "@/components/blog/post/PostCardSkeleton";
 import PostCard from "@/components/blog/post/PostCard";
-import MainNavbar from "@/components/layout/MainNavbar";
+import MainNavbar from "@/components/layout/Navbar";
 import { Search, Filter, Calendar, Tag, SortDesc } from "lucide-react";
 import { IPostPreview } from "@/types";
 

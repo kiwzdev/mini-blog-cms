@@ -56,7 +56,7 @@ export const authOptions: NextAuthOptions = {
             id: user.id.toString(),
             email: user.email.toLowerCase(),
             username: user.username.toLowerCase(),
-            image: user.profileImage || undefined,
+            profileImage: user.profileImage || undefined,
             role: user.role || "user", // default role
             emailVerified: user.emailVerified,
           };
@@ -95,7 +95,7 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.email = user.email;
         token.username = user.username;
-        token.image = user.image || undefined;
+        token.profileImage = user.profileImage || undefined;
         token.role = user.role;
         token.emailVerified = user.emailVerified || undefined;
       }
@@ -104,7 +104,7 @@ export const authOptions: NextAuthOptions = {
       if (trigger === "update" && session?.user) {
         token.username = session.user.username ?? token.username;
         token.email = session.user.email ?? token.email;
-        token.image = session.user.image ?? token.image;
+        token.profileImage = session.user.profileImage ?? token.profileImage;
         token.role = session.user.role ?? token.role;
         token.emailVerified = session.user.emailVerified ?? token.emailVerified;
       }
@@ -124,7 +124,7 @@ export const authOptions: NextAuthOptions = {
         id: token.id,
         email: token.email!,
         username: token.username,
-        image: token.image,
+        profileImage: token.profileImage,
         role: token.role,
         emailVerified: token.emailVerified,
       };

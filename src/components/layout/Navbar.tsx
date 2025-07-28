@@ -35,7 +35,7 @@ export default function MainNavbar() {
           href="/"
           className="text-3xl md:text-2xl font-bold text-gray-800 dark:text-gray-100"
         >
-         Mini Blog
+          Mini Blog
         </Link>
 
         {/* Desktop Menu */}
@@ -58,14 +58,14 @@ export default function MainNavbar() {
               >
                 <Image
                   src={
-                    session.user.image
-                      ? getCloudinaryUrl(session.user.image)
+                    session.user.profileImage
+                      ? getCloudinaryUrl(session.user.profileImage)
                       : process.env.NEXT_PUBLIC_DEFAULT_POST_IMAGE!
                   }
                   alt="Profile"
-                  width={55}
-                  height={55}
-                  className="rounded-full border border-gray-300 dark:border-gray-600 shadow hover:ring-2 hover:ring-blue-400 transition"
+                  width={30}
+                  height={30}
+                  className="rounded-full border w-9 h-9 object-none border-gray-300 dark:border-gray-600 shadow hover:ring-2 hover:ring-blue-400 transition"
                 />
               </button>
 

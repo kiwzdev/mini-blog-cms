@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import PostCard from "@/components/blog/post/PostCard";
 import PostCardSkeleton from "@/components/blog/post/PostCardSkeleton";
-import MainNavbar from "@/components/layout/MainNavbar";
+import MainNavbar from "@/components/layout/Navbar";
 import { ArrowLeft, FileText } from "lucide-react";
 import { IPost } from "@/types";
 

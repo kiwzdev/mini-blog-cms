@@ -2,7 +2,7 @@ import axios from "axios";
 
 // For User profile page
 export const getUserPosts = async (userId: string) => {
-  const { data } = await axios.get("/api/posts", {
+  const { data } = await axios.get(`/api/users/${userId}/posts`, {
     params: { userId },
   });
   return data;

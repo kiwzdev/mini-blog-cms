@@ -9,7 +9,7 @@ declare module "next-auth" {
       id: string;
       email: string;
       username: string;
-      image?: string;
+      profileImage?: string;
       role: string;
       emailVerified?: Date;
     } & DefaultSession["user"]; // รวมกับฟิลด์ default ของ session.user เช่น email, name, image
@@ -20,7 +20,7 @@ declare module "next-auth" {
     id: string;
     email: string;
     username: string;
-    image?: string;
+    profileImage?: string;
     role: string;
     emailVerified?: Date;
   }
@@ -33,7 +33,7 @@ declare module "next-auth/jwt" {
     id: string;
     email: string;
     username: string;
-    image?: string;
+    profileImage?: string;
     role: string;
     emailVerified?: Date;
   }

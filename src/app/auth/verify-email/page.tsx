@@ -49,7 +49,7 @@ export default function VerifyPage() {
 
             if (count <= 0) {
               clearInterval(countdownInterval);
-              router.replace("/todos");
+              router.replace("/auth/sign-in");
             }
           }, 1000);
         } else {

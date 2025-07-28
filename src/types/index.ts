@@ -3,7 +3,7 @@ export interface IUser {
   email: string;
   name?: string;
   username: string;
-  image?: string;
+  profileImage?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -14,7 +14,7 @@ export interface IUserProfile {
   username: string; // unique, for URL
   name?: string;
   bio?: string;
-  image?: string;
+  profileImage?: string;
   coverImage?: string;
   socialLinks?: {
     twitter?: string;
@@ -64,7 +64,7 @@ export interface IPostPreview {
   author: {
     id: string;
     name?: string;
-    image?: string;
+    profileImage?: string;
     username: string;
   };
   _count?: {
@@ -73,15 +73,35 @@ export interface IPostPreview {
   };
 }
 
-export interface IPost extends IPostPreview {
+export interface ICreatePostInput {
+  title: string;
+  slug: string;
+  content: string;
+  contentType: "markdown" | "richtext";
+  excerpt?: string;
+  coverImage?: string;
+  published?: boolean;
+  category?: string;
+}
 
+export interface IUpdatePostInput {
+  title?: string;
+  slug?: string;
+  content?: string;
+  contentType?: "markdown" | "richtext";
+  excerpt?: string;
+  coverImage?: string;
+  published?: boolean;
+  category?: string;
+}
+
+export interface IPost extends IPostPreview {
   updatedAt: Date;
   content: string;
   contentType: "markdown" | "richtext";
 
-
-  comments: IComment[];
-  likes: ILike[];
+  comments?: IComment[];
+  likes?: ILike[];
 }
 
 export interface IComment {
