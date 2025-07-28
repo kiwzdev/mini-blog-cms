@@ -16,6 +16,7 @@ import {
   User,
   BarChart3,
 } from "lucide-react";
+import Image from "next/image";
 
 const navItems = [
   {
@@ -86,7 +87,7 @@ export function DashboardNav() {
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
               {session?.user?.image ? (
-                <img
+                <Image
                   src={session.user.image}
                   alt={session.user.name || "User"}
                   className="w-10 h-10 rounded-full"

@@ -1,12 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatDate } from "@/lib/utils";
-import { Post } from "@/types";
+import { IPostPreview } from "@/types";
 import { Clock, Heart, MessageCircle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
-function PostCard({ post }: { post: Post }) {
+function PostCard({ post }: { post: IPostPreview }) {
   return (
     <Card className="glass-card overflow-hidden hover:scale-105 transition-all duration-300 group">
       {/* Cover Image */}
@@ -42,9 +42,11 @@ function PostCard({ post }: { post: Post }) {
         </div>
 
         {/* Title & Excerpt */}
-        <h2 className="text-xl font-bold mb-3 line-clamp-2 group-hover:text-blue-600 transition-colors">
-          {post.title}
-        </h2>
+        <Link href={`/blog/${post.slug}`}>
+          <h2 className="text-xl font-bold mb-3 line-clamp-2 group-hover:text-blue-600 transition-colors">
+            {post.title}
+          </h2>
+        </Link>
         <p className="text-slate-600 dark:text-slate-400 text-sm mb-4 line-clamp-3">
           {post.excerpt}
         </p>

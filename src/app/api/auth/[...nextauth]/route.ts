@@ -1,40 +1,11 @@
 import bcrypt from "bcryptjs";
-import NextAuth, { User as AuthUser, Session } from "next-auth";
+import NextAuth, { User, Session } from "next-auth";
 import { type SessionStrategy, type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { JWT } from "next-auth/jwt";
+import prisma from "@/lib/db";
 import { AdapterUser } from "next-auth/adapters";
-
-// Extended types for our custom user properties
-interface ExtendedUser extends AuthUser {
-  id: string;
-  email: string;
-  username: string;
-  image?: string;
-  role: string;
-  emailVerified: Date | null;
-}
-
-interface ExtendedToken extends JWT {
-  id: string;
-  email: string;
-  username: string;
-  image?: string;
-  role: string;
-  emailVerified: Date | null;
-}
-
-interface ExtendedSession extends Session {
-  user: {
-    id: string;
-    email: string;
-    username: string;
-    image?: string;
-    role: string;
-    emailVerified: Date | null;
-  };
-}
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -49,7 +20,7 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
 
-      async authorize(credentials): Promise<ExtendedUser | null> {
+      async authorize(credentials): Promise<User | null> {
         if (!credentials?.email || !credentials?.password) {
           throw new Error("Missing email or password");
         }
@@ -61,6 +32,9 @@ export const authOptions: NextAuthOptions = {
 
           if (!user) {
             throw new Error("User not found");
+          }
+          if (!user.password) {
+            throw new Error("Password not found");
           }
           console.log(user);
 
@@ -79,10 +53,10 @@ export const authOptions: NextAuthOptions = {
           }
 
           return {
-            id: user._id.toString(),
+            id: user.id.toString(),
             email: user.email.toLowerCase(),
             username: user.username.toLowerCase(),
-            image: user.image || undefined,
+            image: user.profileImage || undefined,
             role: user.role || "user", // default role
             emailVerified: user.emailVerified,
           };
@@ -100,7 +74,6 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: "/login",
-    signUp: "/register",
   },
 
   secret: process.env.NEXTAUTH_SECRET,
@@ -112,19 +85,19 @@ export const authOptions: NextAuthOptions = {
       trigger,
       session,
     }: {
-      token: ExtendedToken;
-      user?: ExtendedUser | AdapterUser;
+      token: JWT;
+      user?: User | AdapterUser;
       trigger?: "signIn" | "signUp" | "update";
       session?: Session;
-    }): Promise<ExtendedToken> {
+    }): Promise<JWT> {
       // if user is logged in add user properties to token
       if (user) {
         token.id = user.id;
         token.email = user.email;
         token.username = user.username;
-        token.image = user.image;
+        token.image = user.image || undefined;
         token.role = user.role;
-        token.emailVerified = user.emailVerified;
+        token.emailVerified = user.emailVerified || undefined;
       }
 
       // When session is updated -> update token
@@ -143,9 +116,9 @@ export const authOptions: NextAuthOptions = {
       session,
       token,
     }: {
-      session: ExtendedSession;
-      token: ExtendedToken;
-    }): Promise<ExtendedSession> {
+      session: Session;
+      token: JWT;
+    }): Promise<Session> {
       // add user properties to session
       session.user = {
         id: token.id,
@@ -168,11 +141,6 @@ export const authOptions: NextAuthOptions = {
     },
   },
 
-  pages: {
-    signIn: "/auth/signin",
-    error: "/auth/error",
-  },
-
   events: {
     async signIn({ user, account, profile }) {
       console.log("User signed in:", {
@@ -189,6 +157,3 @@ export const authOptions: NextAuthOptions = {
 
 const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };
-
-// Export types for use in other files
-export type { ExtendedUser, ExtendedToken, ExtendedSession };

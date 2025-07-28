@@ -1,45 +1,102 @@
-export interface User {
+export interface IUser {
   id: string;
   email: string;
   name?: string;
+  username: string;
   image?: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export interface Post {
+export interface IUserProfile {
+  // Public fields
+  id: string;
+  username: string; // unique, for URL
+  name?: string;
+  bio?: string;
+  image?: string;
+  coverImage?: string;
+  socialLinks?: {
+    twitter?: string;
+    github?: string;
+    website?: string;
+  };
+  createdAt: Date;
+
+  // Private fields (เฉพาะเจ้าของ)
+  email?: string;
+  phone?: string;
+  settings?: {
+    profileVisibility: "public" | "private";
+    showEmail: boolean;
+    allowComments: boolean;
+  };
+
+  // Stats
+  _count: {
+    posts: number;
+    followers?: number;
+    following?: number;
+  };
+}
+
+export interface signUpData {
+  name: string;
+  email: string;
+  password: string;
+}
+
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+}
+
+export interface IPostPreview {
   id: string;
   title: string;
   slug: string;
-  content: string;
-  contentType: "markdown" | "richtext";
   excerpt?: string;
   coverImage?: string;
   published: boolean;
   createdAt: Date;
-  updatedAt: Date;
-  authorId: string;
-  author: User;
+  category?: string;
+  author: {
+    id: string;
+    name?: string;
+    image?: string;
+    username: string;
+  };
   _count?: {
     comments: number;
     likes: number;
   };
 }
 
+export interface IPost extends IPostPreview {
 
-export interface Comment {
+  updatedAt: Date;
+  content: string;
+  contentType: "markdown" | "richtext";
+
+
+  comments: IComment[];
+  likes: ILike[];
+}
+
+export interface IComment {
   id: string;
   content: string;
   createdAt: Date;
   updatedAt: Date;
   postId: string;
   authorId: string;
-  author: User;
+  author: IUser;
 }
 
-export interface Like {
+export interface ILike {
   id: string;
   postId: string;
   userId: string;
-  user: User;
+  user: IUser;
 }
