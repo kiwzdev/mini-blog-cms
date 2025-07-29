@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { getImageUrl } from "@/helpers/image";
 import { formatDate } from "@/lib/utils";
 import { IPostCard } from "@/types";
 import { Clock, Heart, MessageCircle } from "lucide-react";
@@ -12,7 +13,11 @@ function PostCard({ post }: { post: IPostCard }) {
       {/* Cover Image */}
       <div className="relative h-48 overflow-hidden">
         <Image
-          src={post.coverImage ?? process.env.NEXT_PUBLIC_DEFAULT_COVER_IMAGE!}
+            src={
+              post.coverImage
+                ? getImageUrl(post.coverImage)  
+                : process.env.NEXT_PUBLIC_DEFAULT_POST_IMAGE!
+            }
           alt={post.title}
           fill
           className="object-cover group-hover:scale-110 transition-transform duration-300"
@@ -25,7 +30,9 @@ function PostCard({ post }: { post: IPostCard }) {
         <div className="flex items-center gap-3 mb-4">
           <Image
             src={
-              post.author.profileImage ?? process.env.NEXT_PUBLIC_DEFAULT_POST_IMAGE!
+              post.author.profileImage
+                ? getImageUrl(post.author.profileImage)
+                : process.env.NEXT_PUBLIC_DEFAULT_POST_IMAGE!
             }
             alt={post.author.name ?? process.env.NEXT_PUBLIC_DEFAULT_NAME!}
             width={32}
@@ -64,7 +71,7 @@ function PostCard({ post }: { post: IPostCard }) {
             </div>
           </div>
           <Button asChild variant="ghost" size="sm">
-            <Link href={`/blog/${post.slug}`}>อ่านต่อ →</Link>
+            <Link href={`/blog/${post.id}`}>อ่านต่อ →</Link>
           </Button>
         </div>
       </CardContent>

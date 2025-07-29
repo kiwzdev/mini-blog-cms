@@ -23,9 +23,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createPostSchema } from "@/lib/validations/postSchema";
-import { isValidHttpUrl } from "@/helpers/next-image";
+import { isValidHttpUrl } from "@/helpers/image";
 import Loading from "@/components/layout/Loading";
 import { BLOG_CATEGORIES } from "@/lib/config";
+import { uploadImage } from "@/api/upload";
 
 export default function NewPostPage() {
   const router = useRouter();
@@ -36,6 +37,7 @@ export default function NewPostPage() {
   );
   const [category, setCategory] = useState("");
   const [coverImage, setCoverImage] = useState("");
+  const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [isPublished, setIsPublished] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -61,12 +63,21 @@ export default function NewPostPage() {
         throw new Error(validation.error.message);
       }
 
+      // Upload cover image
+      if (coverImageFile) {
+        const uploadResult = await uploadImage(coverImageFile);
+        if (!uploadResult.success) {
+          throw new Error("Failed to upload cover image");
+        }
+        createdPost.coverImage = uploadResult.data.publicId;
+      }
+
       // Create the post
-      const newPost = await createPost(createdPost);
+      const result = await createPost(createdPost);
 
       if (publish) {
         toast.success("เผยแพร่โพสต์สำเร็จ!");
-        router.push(`/dashboard/posts/${newPost.id}`);
+        router.push(`/dashboard/posts/${result.id}`);
       } else {
         toast.success("บันทึกแบบร่างสำเร็จ!");
       }
@@ -90,6 +101,27 @@ export default function NewPostPage() {
     toast("ไม่สามารถอัปโหลดรูปภาพได้");
     setIsValidCoverImage(false);
     setCoverImage("");
+  };
+
+  const handleUploadCoverImage = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // ตรวจสอบประเภทและขนาดไฟล์
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png"];
+    const maxSize = 5 * 1024 * 1024; // 5MB
+
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Please select a valid image file (JPEG, PNG, JPG)");
+      return;
+    }
+    if (file.size > maxSize) {
+      toast.error("File size must be less than 5MB");
+      return;
+    }
+    setCoverImageFile(file);
   };
 
   return (
@@ -228,6 +260,15 @@ export default function NewPostPage() {
                     onChange={onCoverImageUrlChange}
                   />
                   <Button variant="outline" className="w-full">
+                    <Input
+                      type="file"
+                      name="image"
+                      accept="image/jpeg,image/png,image/jpg"
+                      onChange={handleUploadCoverImage}
+                      className="hidden"
+                      id="upload"
+                      disabled={isSaving}
+                    />
                     <Upload className="w-4 h-4 mr-2" />
                     อัพโหลดรูป
                   </Button>

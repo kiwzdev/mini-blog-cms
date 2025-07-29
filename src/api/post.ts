@@ -39,33 +39,6 @@ export const deletePost = async (id: string) => {
   return data;
 };
 
-// Upload API Functions
-export const uploadImage = async (file: File) => {
-  const formData = new FormData();
-  formData.append("file", file);
-
-  const { data } = await axios.post("/api/upload", formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
-  return data;
-};
-
-export const uploadImages = async (files: File[]) => {
-  const formData = new FormData();
-  files.forEach((file, index) => {
-    formData.append(`files`, file);
-  });
-
-  const { data } = await axios.post("/api/upload", formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
-  return data;
-};
-
 export interface ApiResponse<T> {
   success: boolean;
   data: T;

@@ -7,25 +7,34 @@ import { Button } from "@/components/ui/button";
 import { LikeButton } from "@/components/blog/like-button";
 import { CommentSection } from "@/components/blog/comment-section";
 import { formatDate } from "@/lib/utils";
-import { ArrowLeft, Clock, User, Eye, Share2 } from "lucide-react";
+import { ArrowLeft, Clock, User, Eye, Share2, Edit3 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getPostById } from "@/api/post";
 import { IPost } from "@/types";
 import Loading from "@/components/layout/Loading";
 import { useLoading } from "@/stores/useLoadingStore";
+import { isOwner } from "@/helpers/auth";
+import { useSession } from "next-auth/react";
+import { getCloudinaryUrl } from "@/helpers/cloudinary";
+import { getImageUrl, isValidHttpUrl } from "@/helpers/image";
 
 export default function BlogPostPage() {
   const params = useParams<{ blogId: string }>();
   const blogId = params.blogId;
+
+  const { data: session } = useSession();
 
   const [post, setPost] = useState<IPost | null>(null);
   const { isLoading, setLoading } = useLoading(`blog-post-${blogId}`);
 
   useEffect(() => {
     try {
+      setLoading(true);
       fetchPost();
     } catch (err) {
       console.error(err);
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -35,14 +44,14 @@ export default function BlogPostPage() {
 
     if (fetchedPost) {
       setPost(fetchedPost);
+    } else {
+      notFound();
     }
     setLoading(false);
   };
 
-  if (isLoading) return <Loading />;
-  if (!post) {
-    notFound();
-  } else
+  if (isLoading || !post) return <Loading />;
+  else
     return (
       <div className="min-h-screen py-8 px-4">
         <div className="max-w-4xl mx-auto">
@@ -62,7 +71,9 @@ export default function BlogPostPage() {
             <div className="relative h-64 md:h-96 rounded-2xl overflow-hidden mb-8">
               <Image
                 src={
-                  post.coverImage || process.env.NEXT_PUBLIC_DEFAULT_POST_IMAGE!
+                  post.coverImage
+                    ? getImageUrl(post.coverImage)
+                    : process.env.NEXT_PUBLIC_DEFAULT_COVER_IMAGE!
                 }
                 alt={post.title}
                 fill
@@ -72,10 +83,27 @@ export default function BlogPostPage() {
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
             </div>
 
-            {/* Title */}
-            <h1 className="text-3xl md:text-5xl font-bold mb-6 leading-tight">
-              {post.title}
-            </h1>
+            {/* Title and Edit Button */}
+            <div className="flex items-start justify-between mb-6">
+              <h1 className="text-3xl md:text-5xl font-bold leading-tight flex-1 mr-4">
+                {post.title}
+              </h1>
+
+              {/* Edit Button - แสดงเฉพาะเจ้าของโพส */}
+              {isOwner(post.author.id, session?.user?.id) && (
+                <div className="flex-shrink-0">
+                  <Button
+                    asChild
+                    className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+                  >
+                    <Link href={`/blog/${post.id}/edit`}>
+                      <Edit3 className="w-4 h-4 mr-2" />
+                      แก้ไขโพส
+                    </Link>
+                  </Button>
+                </div>
+              )}
+            </div>
 
             {/* Meta Info */}
             <div className="flex flex-wrap items-center gap-6 text-slate-600 dark:text-slate-400 mb-8">

@@ -46,14 +46,17 @@ import {
 } from "@/lib/validations/postSchema";
 import { BLOG_CATEGORIES } from "@/lib/config";
 import { IPost } from "@/types";
-import { isValidHttpUrl } from "@/helpers/next-image";
+import { isValidHttpUrl } from "@/helpers/image";
 import Loading from "@/components/layout/Loading";
+import { uploadImage } from "@/api/upload";
+import { useLoading } from "@/stores/useLoadingStore";
 
 const categories = BLOG_CATEGORIES;
 
 export default function EditPostPage() {
   const params = useParams<{ blogId: string }>();
   const blogId = params.blogId;
+
   const router = useRouter();
 
   const [title, setTitle] = useState("");
@@ -63,9 +66,10 @@ export default function EditPostPage() {
   );
   const [category, setCategory] = useState("");
   const [coverImage, setCoverImage] = useState("");
+  const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [isPublished, setIsPublished] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const { isLoading, setLoading } = useLoading(`blog-post-${blogId}`);
   const [isDeleting, setIsDeleting] = useState(false);
   const [post, setPost] = useState<IPost | null>(null);
 
@@ -73,7 +77,7 @@ export default function EditPostPage() {
   useEffect(() => {
     const fetchPost = async () => {
       try {
-        setIsLoading(true);
+        setLoading(true);
         const postData = await getPostById(blogId);
 
         if (postData) {
@@ -90,7 +94,7 @@ export default function EditPostPage() {
         toast.error("ไม่สามารถโหลดข้อมูลโพสต์ได้");
         router.push("/dashboard/posts");
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
 
@@ -119,6 +123,15 @@ export default function EditPostPage() {
       const validation = updatePostSchema.safeParse(updatedPost);
       if (!validation.success) {
         throw new Error(validation.error.message);
+      }
+
+      // Upload cover image
+      if (coverImageFile) {
+        const uploadResult = await uploadImage(coverImageFile, coverImage);
+        if (!uploadResult.success) {
+          throw new Error("Failed to upload cover image");
+        }
+        updatedPost.coverImage = uploadResult.data.publicId;
       }
 
       // Update the post
@@ -167,10 +180,29 @@ export default function EditPostPage() {
     setCoverImage("");
   };
 
+  const handleUploadCoverImage = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // ตรวจสอบประเภทและขนาดไฟล์
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png"];
+    const maxSize = 5 * 1024 * 1024; // 5MB
+
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Please select a valid image file (JPEG, PNG, JPG)");
+      return;
+    }
+    if (file.size > maxSize) {
+      toast.error("File size must be less than 5MB");
+      return;
+    }
+    setCoverImageFile(file);
+  };
+
   if (isLoading) return <Loading />;
-  if (!post) {
-    notFound();
-  } else
+  else
     return (
       <>
         <MainNavbar />
@@ -180,7 +212,7 @@ export default function EditPostPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <Button asChild variant="ghost">
-                  <Link href="/dashboard/posts">
+                  <Link href={`/blog/${post?.id}`}>
                     <ArrowLeft className="w-4 h-4 mr-2" />
                     กลับ
                   </Link>
@@ -378,9 +410,20 @@ export default function EditPostPage() {
                       value={coverImage}
                       onChange={onCoverImageUrlChange}
                     />
-                    <Button variant="outline" className="w-full">
-                      <Upload className="w-4 h-4 mr-2" />
-                      อัพโหลดรูปใหม่
+                    <Button variant="outline" className="w-full" asChild>
+                      <label htmlFor="upload" className="cursor-pointer">
+                        <input
+                          type="file"
+                          name="image"
+                          accept="image/jpeg,image/png,image/jpg"
+                          onChange={handleUploadCoverImage}
+                          className="hidden"
+                          id="upload"
+                          disabled={isSaving}
+                        />
+                        <Upload className="w-4 h-4 mr-2" />
+                        อัพโหลดรูป
+                      </label>
                     </Button>
                     {/* แสดงเฉพาะเมื่อ URL ถูกต้อง */}
                     {isValidHttpUrl(coverImage) && isValidCoverImage && (
