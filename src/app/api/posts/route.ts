@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     const post = await prisma.post.create({
-      data: {
+      data: { 
         title,
         slug,
         content,

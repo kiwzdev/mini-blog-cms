@@ -63,10 +63,10 @@ export default function NewPostPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSave = async (publish: boolean = false) => {
-    if (!title.trim() || !content.trim()) {
-      toast.error("กรุณากรอกชื่อเรื่องและเนื้อหา");
-      return;
-    }
+    // if (!title.trim() || !content.trim()) {
+    //   toast.error("กรุณากรอกชื่อเรื่องและเนื้อหา");
+    //   return;
+    // }
 
     setIsSaving(true);
 
@@ -90,11 +90,11 @@ export default function NewPostPage() {
       }
 
       // Create the post
-      createPost(createdPost);
+      const newPost = await createPost(createdPost);
 
       if (publish) {
         toast.success("เผยแพร่โพสต์สำเร็จ!");
-        router.push("/dashboard/posts");
+        router.push(`/dashboard/posts/${newPost.slug}`);
       } else {
         toast.success("บันทึกแบบร่างสำเร็จ!");
       }

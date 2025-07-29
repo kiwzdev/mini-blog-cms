@@ -3,11 +3,38 @@ import NextAuth, { User, Session } from "next-auth";
 import { type SessionStrategy, type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
+import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { JWT } from "next-auth/jwt";
-import prisma from "@/lib/db";
-import { AdapterUser } from "next-auth/adapters";
+import { Adapter, AdapterUser } from "next-auth/adapters";
+import { PrismaClient } from "@prisma/client";
+import { nanoid } from "nanoid";
+
+const prisma = new PrismaClient();
+
+// Custom adapter that ensures username is set
+function CustomPrismaAdapter(p: PrismaClient): Adapter {
+  const baseAdapter = PrismaAdapter(p) as Adapter;
+  
+  return {
+    ...baseAdapter,
+    async createUser(data: AdapterUser) {
+      // Ensure username is set when creating user
+      const userData = {
+        id: data.id,
+        name: data.name,
+        email: data.email,
+        emailVerified: data.emailVerified,
+        username: `user-${nanoid(6)}`, // Generate username
+        profileImage: data.image, // Map image to profileImage
+      };
+      
+      return p.user.create({ data: userData });
+    },
+  };
+}
 
 export const authOptions: NextAuthOptions = {
+  adapter: CustomPrismaAdapter(prisma),
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -55,7 +82,7 @@ export const authOptions: NextAuthOptions = {
           return {
             id: user.id.toString(),
             email: user.email.toLowerCase(),
-            username: user.username.toLowerCase(),
+            username: user.username ? user.username.toLowerCase() : "",
             profileImage: user.profileImage || undefined,
             role: user.role || "user", // default role
             emailVerified: user.emailVerified,
@@ -67,13 +94,12 @@ export const authOptions: NextAuthOptions = {
       },
     }),
   ],
-
   session: {
     strategy: "jwt" as SessionStrategy,
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   pages: {
-    signIn: "/login",
+    signIn: "/",
   },
 
   secret: process.env.NEXTAUTH_SECRET,
