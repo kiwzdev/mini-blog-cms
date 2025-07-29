@@ -9,7 +9,7 @@ import PostCardSkeleton from "@/components/blog/post/PostCardSkeleton";
 import PostCard from "@/components/blog/post/PostCard";
 import MainNavbar from "@/components/layout/Navbar";
 import { Search, Filter, Calendar, Tag, SortDesc } from "lucide-react";
-import { IPostPreview } from "@/types";
+import { IPostCard } from "@/types";
 
 // Mock categories
 const categories = [
@@ -337,7 +337,7 @@ export default function BlogPage() {
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                 <Suspense fallback={<PostCardSkeleton />}>
                   {sortedPosts.map((post) => (
-                    <PostCard key={post.id} post={post as IPostPreview} />
+                    <PostCard key={post.id} post={post as IPostCard} />
                   ))}
                 </Suspense>
               </div>

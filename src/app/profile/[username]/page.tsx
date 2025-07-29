@@ -19,7 +19,7 @@ import {
   Heart,
   MessageCircle,
 } from "lucide-react";
-import { IPostPreview } from "@/types";
+import { IPostCard } from "@/types";
 
 // Mock user profile data
 const mockUserProfile = {
@@ -256,7 +256,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                   <Suspense fallback={<PostCardSkeleton />}>
                     {userPosts.map((post) => (
-                      <PostCard key={post.id} post={post as IPostPreview} />
+                      <PostCard key={post.id} post={post as IPostCard} />
                     ))}
                   </Suspense>
                 </div>

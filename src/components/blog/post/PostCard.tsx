@@ -1,12 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatDate } from "@/lib/utils";
-import { IPostPreview } from "@/types";
+import { IPostCard } from "@/types";
 import { Clock, Heart, MessageCircle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
-function PostCard({ post }: { post: IPostPreview }) {
+function PostCard({ post }: { post: IPostCard }) {
   return (
     <Card className="glass-card overflow-hidden hover:scale-105 transition-all duration-300 group">
       {/* Cover Image */}

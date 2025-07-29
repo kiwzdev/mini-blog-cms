@@ -52,7 +52,7 @@ export interface ApiResponse<T> {
   message?: string;
 }
 
-export interface IPostPreview {
+export interface IPostCard {
   id: string;
   title: string;
   slug: string;
@@ -95,7 +95,7 @@ export interface IUpdatePostInput {
   category?: string;
 }
 
-export interface IPost extends IPostPreview {
+export interface IPost extends IPostCard {
   updatedAt: Date;
   content: string;
   contentType: "markdown" | "richtext";
