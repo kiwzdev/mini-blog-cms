@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
       new URL("https://www.pixelstalk.net/**"),
       new URL("https://images.unsplash.com/**"),
       new URL("https://res.cloudinary.com/**"),
+      new URL("https://lh3.googleusercontent.com/**"),
     ],
   },
 };

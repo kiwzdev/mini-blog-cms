@@ -11,6 +11,9 @@ export const getCloudinaryUrl = (
     crop?: "fill" | "fit" | "scale" | "thumb";
   }
 ) => {
+  // For OAuth image path
+  if (publicId.includes("http://") || publicId.includes("https://"))
+    return publicId;
   //  !!! สำคัญมาก: เปลี่ยนเป็น Cloud Name ของคุณ !!!
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!;
 
