@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,34 +22,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Code,
-  Heart,
-  Camera,
-  Utensils,
-  Plane,
-  BookOpen,
-  Gamepad2,
-  Music,
-} from "lucide-react";
 import { createPostSchema } from "@/lib/validations/postSchema";
 import { isValidHttpUrl } from "@/helpers/next-image";
-
-const categories = [
-  { id: "technology", name: "เทคโนโลยี", icon: Code, color: "bg-blue-500" },
-  { id: "lifestyle", name: "ไลฟ์สไตล์", icon: Heart, color: "bg-pink-500" },
-  { id: "food", name: "อาหาร", icon: Utensils, color: "bg-orange-500" },
-  { id: "travel", name: "ท่องเที่ยว", icon: Plane, color: "bg-green-500" },
-  {
-    id: "photography",
-    name: "การถ่ายภาพ",
-    icon: Camera,
-    color: "bg-purple-500",
-  },
-  { id: "education", name: "การศึกษา", icon: BookOpen, color: "bg-indigo-500" },
-  { id: "gaming", name: "เกม", icon: Gamepad2, color: "bg-red-500" },
-  { id: "music", name: "ดนตรี", icon: Music, color: "bg-yellow-500" },
-];
+import Loading from "@/components/layout/Loading";
+import { BLOG_CATEGORIES } from "@/lib/config";
 
 export default function NewPostPage() {
   const router = useRouter();
@@ -117,7 +93,7 @@ export default function NewPostPage() {
   };
 
   return (
-    <>
+    <Suspense fallback={<Loading />}>
       <MainNavbar />
       <div className="min-h-screen py-12 px-4">
         <div className="space-y-6 max-w-6xl mx-auto">
@@ -220,7 +196,7 @@ export default function NewPostPage() {
                       <SelectValue placeholder="Category" />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories.map((category) => (
+                      {BLOG_CATEGORIES.map((category) => (
                         <SelectItem
                           key={category.id}
                           value={category.id}
@@ -291,6 +267,6 @@ export default function NewPostPage() {
           </div>
         </div>
       </div>
-    </>
+    </Suspense>
   );
 }

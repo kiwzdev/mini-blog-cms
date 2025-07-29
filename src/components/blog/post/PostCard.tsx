@@ -25,7 +25,7 @@ function PostCard({ post }: { post: IPostCard }) {
         <div className="flex items-center gap-3 mb-4">
           <Image
             src={
-              post.author.image ?? process.env.NEXT_PUBLIC_DEFAULT_POST_IMAGE!
+              post.author.profileImage ?? process.env.NEXT_PUBLIC_DEFAULT_POST_IMAGE!
             }
             alt={post.author.name ?? process.env.NEXT_PUBLIC_DEFAULT_NAME!}
             width={32}
@@ -42,7 +42,7 @@ function PostCard({ post }: { post: IPostCard }) {
         </div>
 
         {/* Title & Excerpt */}
-        <Link href={`/blog/${post.slug}`}>
+        <Link href={`/blog/${post.id}`}>
           <h2 className="text-xl font-bold mb-3 line-clamp-2 group-hover:text-blue-600 transition-colors">
             {post.title}
           </h2>

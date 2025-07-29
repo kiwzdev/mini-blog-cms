@@ -26,7 +26,10 @@ export const createPost = async (postData: ICreatePostInput) => {
   return data;
 };
 
-export const updatePost = async (postId: string, postData: IUpdatePostInput) => {
+export const updatePost = async (
+  postId: string,
+  postData: IUpdatePostInput
+) => {
   const { data } = await axios.put(`/api/posts/${postId}`, postData);
   return data;
 };

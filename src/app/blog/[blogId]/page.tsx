@@ -22,22 +22,27 @@ export default function BlogPostPage() {
   const { isLoading, setLoading } = useLoading(`blog-post-${blogId}`);
 
   useEffect(() => {
-    const fetchPost = async () => {
-      setLoading(true);
-      const fetchedPost = await getPostById(blogId);
-
-      if (fetchedPost) {
-        setPost(fetchedPost);
-      } else {
-        notFound();
-      }
-      setLoading(false);
-    };
-    fetchPost();
+    try {
+      fetchPost();
+    } catch (err) {
+      console.error(err);
+    }
   }, []);
 
-  if (isLoading || !post) return <Loading />;
-  else
+  const fetchPost = async () => {
+    setLoading(true);
+    const fetchedPost = await getPostById(blogId);
+
+    if (fetchedPost) {
+      setPost(fetchedPost);
+    }
+    setLoading(false);
+  };
+
+  if (isLoading) return <Loading />;
+  if (!post) {
+    notFound();
+  } else
     return (
       <div className="min-h-screen py-8 px-4">
         <div className="max-w-4xl mx-auto">

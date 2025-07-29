@@ -1,7 +1,7 @@
 export interface IUser {
   id: string;
   email: string;
-  name?: string;
+  name: string;
   username: string;
   profileImage?: string;
   createdAt: Date;
@@ -12,7 +12,7 @@ export interface IUserProfile {
   // Public fields
   id: string;
   username: string; // unique, for URL
-  name?: string;
+  name: string;
   bio?: string;
   profileImage?: string;
   coverImage?: string;
@@ -56,14 +56,14 @@ export interface IPostCard {
   id: string;
   title: string;
   slug: string;
-  excerpt?: string;
+  excerpt: string;
   coverImage?: string;
   published: boolean;
   createdAt: Date;
   category?: string;
   author: {
     id: string;
-    name?: string;
+    name: string;
     profileImage?: string;
     username: string;
   };

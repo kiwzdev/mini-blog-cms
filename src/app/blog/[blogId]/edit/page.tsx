@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, notFound } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,6 +47,7 @@ import {
 import { BLOG_CATEGORIES } from "@/lib/config";
 import { IPost } from "@/types";
 import { isValidHttpUrl } from "@/helpers/next-image";
+import Loading from "@/components/layout/Loading";
 
 const categories = BLOG_CATEGORIES;
 
@@ -166,273 +167,257 @@ export default function EditPostPage() {
     setCoverImage("");
   };
 
-  if (isLoading) {
+  if (isLoading) return <Loading />;
+  if (!post) {
+    notFound();
+  } else
     return (
       <>
         <MainNavbar />
         <div className="min-h-screen py-12 px-4">
-          <div className="max-w-6xl mx-auto">
-            <div className="animate-pulse space-y-6">
-              <div className="h-8 bg-gray-300 rounded w-1/4"></div>
-              <div className="grid lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-4">
-                  <div className="h-96 bg-gray-300 rounded"></div>
+          <div className="space-y-6 max-w-6xl mx-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Button asChild variant="ghost">
+                  <Link href="/dashboard/posts">
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    กลับ
+                  </Link>
+                </Button>
+                <div>
+                  <h1 className="text-2xl font-bold">แก้ไขบล็อก</h1>
+                  <p className="text-sm text-gray-600 mt-1">
+                    แก้ไขล่าสุด:{" "}
+                    {post?.updatedAt
+                      ? new Date(post.updatedAt).toLocaleDateString("th-TH")
+                      : "ไม่ระบุ"}
+                  </p>
                 </div>
-                <div className="space-y-4">
-                  <div className="h-32 bg-gray-300 rounded"></div>
-                  <div className="h-48 bg-gray-300 rounded"></div>
-                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      disabled={isDeleting}
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      ลบ
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle className="flex items-center gap-2">
+                        <AlertTriangle className="w-5 h-5 text-red-500" />
+                        ยืนยันการลบโพสต์
+                      </AlertDialogTitle>
+                      <AlertDialogDescription>
+                        คุณแน่ใจหรือไม่ที่จะลบโพสต์ &ldquo;{title}&rdquo;
+                        การดำเนินการนี้ไม่สามารถย้อนกลับได้
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDelete}
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        ลบโพสต์
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+
+                <Button
+                  variant="outline"
+                  onClick={() => handleSave(false)}
+                  disabled={isSaving}
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  บันทึกการแก้ไข
+                </Button>
+
+                <Button
+                  onClick={() => handleSave(true)}
+                  disabled={isSaving}
+                  className="bg-gradient-to-r from-blue-600 to-purple-600"
+                >
+                  <Eye className="w-4 h-4 mr-2" />
+                  อัปเดต
+                </Button>
+              </div>
+            </div>
+
+            <div className="grid lg:grid-cols-3 gap-6">
+              {/* Main Content */}
+              <div className="lg:col-span-2">
+                {/* Title and Editor Selection */}
+                <Card className="glass-card">
+                  <CardContent className="px-6 py-2 space-y-6">
+                    {/* Title Section */}
+                    <div>
+                      <Label htmlFor="title" className="text-base font-medium">
+                        ชื่อเรื่อง
+                      </Label>
+                      <Input
+                        id="title"
+                        placeholder="ใส่ชื่อเรื่องที่น่าสนใจ..."
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        className="mt-2 text-lg"
+                      />
+                    </div>
+
+                    {/* Editor Selection */}
+                    <div>
+                      <Label className="text-base">รูปแบบการเขียน</Label>
+                      <div className="flex gap-4 mt-2">
+                        <Button
+                          variant={
+                            contentType === "markdown" ? "default" : "outline"
+                          }
+                          onClick={() => setContentType("markdown")}
+                        >
+                          Markdown
+                        </Button>
+                        <Button
+                          variant={
+                            contentType === "richtext" ? "default" : "outline"
+                          }
+                          onClick={() => setContentType("richtext")}
+                        >
+                          Rich Text
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+
+                  {/* Content Editor */}
+                  <CardContent>
+                    {contentType === "markdown" ? (
+                      <MarkdownEditor value={content} onChange={setContent} />
+                    ) : (
+                      <RichTextEditor value={content} onChange={setContent} />
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Sidebar */}
+              <div className="space-y-6">
+                {/* Status */}
+                <Card className="glass-card">
+                  <CardHeader>
+                    <CardTitle>สถานะโพสต์</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center gap-2">
+                      <div
+                        className={`w-2 h-2 rounded-full ${
+                          isPublished ? "bg-green-500" : "bg-yellow-500"
+                        }`}
+                      ></div>
+                      <span className="text-sm font-medium">
+                        {isPublished ? "เผยแพร่แล้ว" : "แบบร่าง"}
+                      </span>
+                    </div>
+                    {post?.createdAt && (
+                      <p className="text-xs text-gray-600 mt-1">
+                        เผยแพร่เมื่อ:{" "}
+                        {new Date(post.createdAt).toLocaleDateString("th-TH")}
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Category selection */}
+                <Card className="glass-card">
+                  <CardHeader>
+                    <CardTitle>หมวดหมู่</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <Select value={category} onValueChange={setCategory}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="เลือกหมวดหมู่" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map((cat) => (
+                          <SelectItem
+                            key={cat.id}
+                            value={cat.id}
+                            className="capitalize"
+                          >
+                            <div className="flex items-center gap-2">
+                              <div
+                                className={`w-6 h-6 rounded-full ${cat.color} flex items-center justify-center`}
+                              >
+                                <cat.icon className="w-3 h-3 text-white" />
+                              </div>
+                              <span className="text-gray-800 font-medium">
+                                {cat.name}
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </CardContent>
+                </Card>
+
+                {/* Cover Image */}
+                <Card className="glass-card">
+                  <CardHeader>
+                    <CardTitle>รูปปก</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <Input
+                      placeholder="URL รูปภาพ"
+                      value={coverImage}
+                      onChange={onCoverImageUrlChange}
+                    />
+                    <Button variant="outline" className="w-full">
+                      <Upload className="w-4 h-4 mr-2" />
+                      อัพโหลดรูปใหม่
+                    </Button>
+                    {/* แสดงเฉพาะเมื่อ URL ถูกต้อง */}
+                    {isValidHttpUrl(coverImage) && isValidCoverImage && (
+                      <Image
+                        src={coverImage}
+                        alt="Cover preview"
+                        width={600}
+                        height={300}
+                        className="w-full h-full object-cover"
+                        onError={onCoverImageUploadError}
+                      />
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Settings */}
+                <Card className="glass-card">
+                  <CardHeader>
+                    <CardTitle>การตั้งค่า</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="published">เผยแพร่ทันที</Label>
+                      <input
+                        id="published"
+                        type="checkbox"
+                        checked={isPublished}
+                        onChange={(e) => setIsPublished(e.target.checked)}
+                        className="rounded w-4 h-4"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             </div>
           </div>
         </div>
       </>
     );
-  }
-
-  return (
-    <>
-      <MainNavbar />
-      <div className="min-h-screen py-12 px-4">
-        <div className="space-y-6 max-w-6xl mx-auto">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button asChild variant="ghost">
-                <Link href="/dashboard/posts">
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  กลับ
-                </Link>
-              </Button>
-              <div>
-                <h1 className="text-2xl font-bold">แก้ไขบล็อก</h1>
-                <p className="text-sm text-gray-600 mt-1">
-                  แก้ไขล่าสุด:{" "}
-                  {post?.updatedAt
-                    ? new Date(post.updatedAt).toLocaleDateString("th-TH")
-                    : "ไม่ระบุ"}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-2">
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm" disabled={isDeleting}>
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    ลบ
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle className="flex items-center gap-2">
-                      <AlertTriangle className="w-5 h-5 text-red-500" />
-                      ยืนยันการลบโพสต์
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
-                      คุณแน่ใจหรือไม่ที่จะลบโพสต์ &ldquo;{title}&rdquo;
-                      การดำเนินการนี้ไม่สามารถย้อนกลับได้
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={handleDelete}
-                      className="bg-red-600 hover:bg-red-700"
-                    >
-                      ลบโพสต์
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-
-              <Button
-                variant="outline"
-                onClick={() => handleSave(false)}
-                disabled={isSaving}
-              >
-                <Save className="w-4 h-4 mr-2" />
-                บันทึกการแก้ไข
-              </Button>
-
-              <Button
-                onClick={() => handleSave(true)}
-                disabled={isSaving}
-                className="bg-gradient-to-r from-blue-600 to-purple-600"
-              >
-                <Eye className="w-4 h-4 mr-2" />
-                อัปเดต
-              </Button>
-            </div>
-          </div>
-
-          <div className="grid lg:grid-cols-3 gap-6">
-            {/* Main Content */}
-            <div className="lg:col-span-2">
-              {/* Title and Editor Selection */}
-              <Card className="glass-card">
-                <CardContent className="px-6 py-2 space-y-6">
-                  {/* Title Section */}
-                  <div>
-                    <Label htmlFor="title" className="text-base font-medium">
-                      ชื่อเรื่อง
-                    </Label>
-                    <Input
-                      id="title"
-                      placeholder="ใส่ชื่อเรื่องที่น่าสนใจ..."
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      className="mt-2 text-lg"
-                    />
-                  </div>
-
-                  {/* Editor Selection */}
-                  <div>
-                    <Label className="text-base">รูปแบบการเขียน</Label>
-                    <div className="flex gap-4 mt-2">
-                      <Button
-                        variant={
-                          contentType === "markdown" ? "default" : "outline"
-                        }
-                        onClick={() => setContentType("markdown")}
-                      >
-                        Markdown
-                      </Button>
-                      <Button
-                        variant={
-                          contentType === "richtext" ? "default" : "outline"
-                        }
-                        onClick={() => setContentType("richtext")}
-                      >
-                        Rich Text
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-
-                {/* Content Editor */}
-                <CardContent>
-                  {contentType === "markdown" ? (
-                    <MarkdownEditor value={content} onChange={setContent} />
-                  ) : (
-                    <RichTextEditor value={content} onChange={setContent} />
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Sidebar */}
-            <div className="space-y-6">
-              {/* Status */}
-              <Card className="glass-card">
-                <CardHeader>
-                  <CardTitle>สถานะโพสต์</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-2">
-                    <div
-                      className={`w-2 h-2 rounded-full ${
-                        isPublished ? "bg-green-500" : "bg-yellow-500"
-                      }`}
-                    ></div>
-                    <span className="text-sm font-medium">
-                      {isPublished ? "เผยแพร่แล้ว" : "แบบร่าง"}
-                    </span>
-                  </div>
-                  {post?.createdAt && (
-                    <p className="text-xs text-gray-600 mt-1">
-                      เผยแพร่เมื่อ:{" "}
-                      {new Date(post.createdAt).toLocaleDateString("th-TH")}
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Category selection */}
-              <Card className="glass-card">
-                <CardHeader>
-                  <CardTitle>หมวดหมู่</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <Select value={category} onValueChange={setCategory}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="เลือกหมวดหมู่" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((cat) => (
-                        <SelectItem
-                          key={cat.id}
-                          value={cat.id}
-                          className="capitalize"
-                        >
-                          <div className="flex items-center gap-2">
-                            <div
-                              className={`w-6 h-6 rounded-full ${cat.color} flex items-center justify-center`}
-                            >
-                              <cat.icon className="w-3 h-3 text-white" />
-                            </div>
-                            <span className="text-gray-800 font-medium">
-                              {cat.name}
-                            </span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </CardContent>
-              </Card>
-
-              {/* Cover Image */}
-              <Card className="glass-card">
-                <CardHeader>
-                  <CardTitle>รูปปก</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <Input
-                    placeholder="URL รูปภาพ"
-                    value={coverImage}
-                    onChange={onCoverImageUrlChange}
-                  />
-                  <Button variant="outline" className="w-full">
-                    <Upload className="w-4 h-4 mr-2" />
-                    อัพโหลดรูปใหม่
-                  </Button>
-                  {/* แสดงเฉพาะเมื่อ URL ถูกต้อง */}
-                  {isValidHttpUrl(coverImage) && isValidCoverImage && (
-                    <Image
-                      src={coverImage}
-                      alt="Cover preview"
-                      width={600}
-                      height={300}
-                      className="w-full h-full object-cover"
-                      onError={onCoverImageUploadError}
-                    />
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Settings */}
-              <Card className="glass-card">
-                <CardHeader>
-                  <CardTitle>การตั้งค่า</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="published">เผยแพร่ทันที</Label>
-                    <input
-                      id="published"
-                      type="checkbox"
-                      checked={isPublished}
-                      onChange={(e) => setIsPublished(e.target.checked)}
-                      className="rounded w-4 h-4"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
-  );
 }

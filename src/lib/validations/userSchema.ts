@@ -11,6 +11,11 @@ export const userSchema = z
       .regex(/^[a-zA-Z0-9_]+$/, {
         message: "Username can only contain letters, numbers, and underscores",
       }),
+    name: z
+      .string()
+      .trim()
+      .min(3, "Name must be at least 3 characters")
+      .max(50, "Name must be at most 50 characters"),
 
     email: z.string().trim().email("Invalid email address"),
 

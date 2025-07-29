@@ -27,6 +27,7 @@ export default function MainNavbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  if(!session) return null // Skeleton
   return (
     <nav className="bg-transparent  px-4 py-3">
       <div className="max-w-7xl mx-auto flex justify-between items-center">
