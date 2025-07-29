@@ -1,4 +1,5 @@
-import { notFound } from "next/navigation";
+"use client";
+import { notFound, useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,117 +8,30 @@ import { LikeButton } from "@/components/blog/like-button";
 import { CommentSection } from "@/components/blog/comment-section";
 import { formatDate } from "@/lib/utils";
 import { ArrowLeft, Clock, User, Eye, Share2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { getPostById } from "@/api/post";
+import { IPost } from "@/types";
 
-// Mock data
-const mockPost = {
-  id: "1",
-  title: "Getting Started with Next.js 14 และ App Router",
-  content: `# Getting Started with Next.js 14
+export default function BlogPostPage() {
+  const params = useParams() as { blogId: string };
+  const { blogId } = params;
 
-Next.js 14 มาพร้อมกับฟีเจอร์ใหม่ๆ มากมายที่จะช่วยให้การพัฒนาเว็บแอปพลิเคชันเป็นไปอย่างง่ายดายและมีประสิทธิภาพมากขึ้น
+  const [post, setPost] = useState<IPost>({} as IPost);
+  const [isLoading, setIsLoading] = useState(true);
 
-## App Router คืออะไร?
+  useEffect(() => {
+    const fetchPost = async () => {
+      setIsLoading(true);
+      const post = await getPostById(blogId);
+      console.log(post);
+      if (post) setPost(post);
+      else notFound();
+      setIsLoading(false);
+    };
+    fetchPost();
+  }, [blogId]);
 
-App Router เป็นระบบ routing ใหม่ของ Next.js ที่ใช้ React Server Components เป็นหลัก ทำให้สามารถ:
-
-- **Server-side Rendering** ที่เร็วขึ้น
-- **Streaming** และ **Suspense** support
-- **Layout** และ **Loading States** ที่ยืดหยุ่น
-
-## การติดตั้ง
-
-\`\`\`bash
-npx create-next-app@latest my-app --typescript --tailwind --eslint
-cd my-app
-npm run dev
-\`\`\`
-
-## โครงสร้างโฟลเดอร์
-
-\`\`\`
-app/
-├── layout.tsx      # Root layout
-├── page.tsx        # Home page
-├── about/
-│   └── page.tsx    # About page
-└── blog/
-    ├── page.tsx    # Blog listing
-    └── [slug]/
-        └── page.tsx # Blog post
-\`\`\`
-
-## Server Components vs Client Components
-
-### Server Components
-- รันบนเซิร์ฟเวอร์
-- ไม่สามารถใช้ useState, useEffect
-- เหมาะสำหรับการดึงข้อมูล
-
-### Client Components
-- รันบนเบราว์เซอร์
-- ใช้ "use client" directive
-- เหมาะสำหรับ Interactive UI
-
-## ตัวอย่างการใช้งาน
-
-\`\`\`tsx
-// app/page.tsx (Server Component)
-export default function HomePage() {
-  return (
-    <div>
-      <h1>Welcome to Next.js 14</h1>
-      <ClientButton />
-    </div>
-  )
-}
-
-// components/client-button.tsx
-"use client"
-import { useState } from 'react'
-
-export function ClientButton() {
-  const [count, setCount] = useState(0)
-  
-  return (
-    <button onClick={() => setCount(count + 1)}>
-      Count: {count}
-    </button>
-  )
-}
-\`\`\`
-
-## สรุป
-
-Next.js 14 พร้อม App Router เป็นการพัฒนาที่ยอดเยี่ยม ช่วยให้เราสามารถสร้างเว็บแอปพลิเคชันที่มีประสิทธิภาพสูงได้อย่างง่ายดาย`,
-  contentType: "markdown",
-  coverImage:
-    "https://wallpapers.com/images/featured/4k-background-fd313fxzl511betu.jpg",
-  published: true,
-  createdAt: new Date("2024-01-15"),
-  author: {
-    name: "John Doe",
-    image:
-      "https://wallpapers.com/images/featured/4k-background-fd313fxzl511betu.jpg",
-  },
-  _count: {
-    likes: 24,
-    comments: 8,
-  },
-};
-
-interface BlogPostPageProps {
-  params: {
-    slug: string;
-  };
-}
-
-export default function BlogPostPage({ params }: BlogPostPageProps) {
-  // ในการใช้งานจริง จะดึงข้อมูลจาก API ตาม slug
-  // const post = await getPostBySlug(params.slug)
-  // if (!post) notFound()
-
-  const post = mockPost; // ใช้ mock data ก่อน
-
+  if (isLoading) return <div>Loading...</div>;
   return (
     <div className="min-h-screen py-8 px-4">
       <div className="max-w-4xl mx-auto">
@@ -136,7 +50,9 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
           {/* Cover Image */}
           <div className="relative h-64 md:h-96 rounded-2xl overflow-hidden mb-8">
             <Image
-              src={post.coverImage}
+              src={
+                post.coverImage || process.env.NEXT_PUBLIC_DEFAULT_POST_IMAGE!
+              }
               alt={post.title}
               fill
               className="object-cover"
@@ -154,8 +70,11 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
           <div className="flex flex-wrap items-center gap-6 text-slate-600 dark:text-slate-400 mb-8">
             <div className="flex items-center gap-2">
               <Image
-                src={post.author.image}
-                alt={post.author.name}
+                src={
+                  post.author.profileImage ||
+                  process.env.NEXT_PUBLIC_DEFAULT_POST_IMAGE!
+                }
+                alt={post.author.name || process.env.NEXT_PUBLIC_DEFAULT_NAME!}
                 width={40}
                 height={40}
                 className="rounded-full"
@@ -176,7 +95,10 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
 
           {/* Actions */}
           <div className="flex items-center gap-4 mb-8">
-            <LikeButton postId={post.id} initialLikes={post._count.likes} />
+            <LikeButton
+              postId={post.id}
+              initialLikes={post._count ? post._count.likes : 0}
+            />
             <Button variant="outline" size="sm">
               <Share2 className="w-4 h-4 mr-2" />
               แชร์

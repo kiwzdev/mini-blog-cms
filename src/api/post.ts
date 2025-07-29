@@ -15,7 +15,7 @@ export const getAllPosts = async (params?: {
 };
 
 // For Post detail page - Full Info
-export const getPost = async (postId: string) => {
+export const getPostById = async (postId: string) => {
   const { data } = await axios.get(`/api/posts/${postId}`);
   return data; // PostWithFullDetails
 };
