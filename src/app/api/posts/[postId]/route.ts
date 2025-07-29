@@ -4,13 +4,15 @@ import { authOptions } from "../../auth/[...nextauth]/route";
 import prisma from "@/lib/db";
 import { UpdatePostInput } from "@/lib/validations/postSchema";
 
-// GET /api/posts/[slug] - Get single post by slug
+type ParamsType = Promise<{ postId: string }>;
+
+// GET /api/posts/[postId] - Get single post by postId
 export async function GET(
   request: NextRequest,
-  { params }: { params: { postId: string } }
+  { params }: { params: ParamsType }
 ) {
   try {
-    const { postId } = params;
+    const { postId } = await params;
 
     const post = await prisma.post.findUnique({
       where: { id: postId },
@@ -79,7 +81,7 @@ export async function GET(
 // PUT /api/posts/[id] - Update post
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { postId: string } }
+  { params }: { params: ParamsType }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -87,13 +89,13 @@ export async function PUT(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { postId } = params;
+    const { postId } = await params;
     const body: UpdatePostInput = await request.json();
 
     // Check if user owns the post
     const existingPost = await prisma.post.findUnique({
       where: { id: postId },
-      select: { authorId: true, title: true, slug: true },
+      select: { authorId: true },
     });
 
     if (!existingPost) {
@@ -162,7 +164,7 @@ export async function PUT(
 // DELETE /api/posts/[id] - Delete post
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { postId: string } }
+  { params }: { params: ParamsType }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -170,7 +172,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { postId } = params;
+    const { postId } = await params;
 
     // Check if user owns the post
     const existingPost = await prisma.post.findUnique({

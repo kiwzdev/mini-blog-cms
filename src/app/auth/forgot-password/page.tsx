@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import Loading from "@/components/Loading";
+import Loading from "@/components/layout/Loading";
 import { useSession } from "next-auth/react";
 
 export default function ForgotPasswordPage() {

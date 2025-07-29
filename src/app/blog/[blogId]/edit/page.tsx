@@ -1,19 +1,26 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RichTextEditor } from "@/components/editor/RichTextEditor";
 import { MarkdownEditor } from "@/components/editor/MarkdownEditor";
-import { ArrowLeft, Save, Eye, Upload } from "lucide-react";
+import {
+  ArrowLeft,
+  Save,
+  Eye,
+  Upload,
+  Trash2,
+  AlertTriangle,
+} from "lucide-react";
 import Link from "next/link";
 import MainNavbar from "@/components/layout/Navbar";
 import Image from "next/image";
 import toast from "react-hot-toast";
-import { createPost } from "@/api/post";
+import { updatePost, getPostById, deletePost } from "@/api/post";
 import { generateExcerpt, generateSlug } from "@/helpers/post";
 import {
   Select,
@@ -23,36 +30,31 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Code,
-  Heart,
-  Camera,
-  Utensils,
-  Plane,
-  BookOpen,
-  Gamepad2,
-  Music,
-} from "lucide-react";
-import { createPostSchema } from "@/lib/validations/postSchema";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  createPostSchema,
+  updatePostSchema,
+} from "@/lib/validations/postSchema";
+import { BLOG_CATEGORIES } from "@/lib/config";
+import { IPost } from "@/types";
 import { isValidHttpUrl } from "@/helpers/next-image";
 
-const categories = [
-  { id: "technology", name: "เทคโนโลยี", icon: Code, color: "bg-blue-500" },
-  { id: "lifestyle", name: "ไลฟ์สไตล์", icon: Heart, color: "bg-pink-500" },
-  { id: "food", name: "อาหาร", icon: Utensils, color: "bg-orange-500" },
-  { id: "travel", name: "ท่องเที่ยว", icon: Plane, color: "bg-green-500" },
-  {
-    id: "photography",
-    name: "การถ่ายภาพ",
-    icon: Camera,
-    color: "bg-purple-500",
-  },
-  { id: "education", name: "การศึกษา", icon: BookOpen, color: "bg-indigo-500" },
-  { id: "gaming", name: "เกม", icon: Gamepad2, color: "bg-red-500" },
-  { id: "music", name: "ดนตรี", icon: Music, color: "bg-yellow-500" },
-];
+const categories = BLOG_CATEGORIES;
 
-export default function NewPostPage() {
+export default function EditPostPage() {
+  const params = useParams<{ blogId: string }>();
+  const blogId = params.blogId;
   const router = useRouter();
+
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [contentType, setContentType] = useState<"markdown" | "richtext">(
@@ -62,13 +64,46 @@ export default function NewPostPage() {
   const [coverImage, setCoverImage] = useState("");
   const [isPublished, setIsPublished] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [post, setPost] = useState<IPost | null>(null);
+
+  // Load existing post data
+  useEffect(() => {
+    const fetchPost = async () => {
+      try {
+        setIsLoading(true);
+        const postData = await getPostById(blogId);
+
+        if (postData) {
+          setTitle(postData.title || "");
+          setContent(postData.content || "");
+          setContentType(postData.contentType || "markdown");
+          setCategory(postData.category || "");
+          setCoverImage(postData.coverImage || "");
+          setIsPublished(postData.published || false);
+          setPost(postData);
+        }
+      } catch (error) {
+        console.error("Error fetching post:", error);
+        toast.error("ไม่สามารถโหลดข้อมูลโพสต์ได้");
+        router.push("/dashboard/posts");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (blogId) {
+      fetchPost();
+    }
+  }, [blogId, router]);
 
   const handleSave = async (publish: boolean = false) => {
     setIsSaving(true);
 
     try {
-      // Created post data
-      const createdPost = {
+      // Update post data
+      const updatedPost = {
         title,
         category,
         content,
@@ -80,25 +115,40 @@ export default function NewPostPage() {
       };
 
       // Validation with Zod
-      const validation = createPostSchema.safeParse(createdPost);
+      const validation = updatePostSchema.safeParse(updatedPost);
       if (!validation.success) {
         throw new Error(validation.error.message);
       }
 
-      // Create the post
-      const newPost = await createPost(createdPost);
+      // Update the post
+      const result = await updatePost(blogId, updatedPost);
 
       if (publish) {
-        toast.success("เผยแพร่โพสต์สำเร็จ!");
-        router.push(`/dashboard/posts/${newPost.id}`);
+        toast.success("อัปเดตและเผยแพร่โพสต์สำเร็จ!");
+        router.push(`/blog/${result.id}`);
       } else {
-        toast.success("บันทึกแบบร่างสำเร็จ!");
+        toast.success("บันทึกการแก้ไขสำเร็จ!");
       }
     } catch (error) {
-      console.error("Error creating post:", error);
-      toast.error("เกิดข้อผิดพลาดในการสร้างโพสต์");
+      console.error("Error updating post:", error);
+      toast.error("เกิดข้อผิดพลาดในการอัปเดตโพสต์");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+
+    try {
+      await deletePost(blogId);
+      toast.success("ลบโพสต์สำเร็จ!");
+      router.push("/dashboard/posts");
+    } catch (error) {
+      console.error("Error deleting post:", error);
+      toast.error("เกิดข้อผิดพลาดในการลบโพสต์");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -116,6 +166,30 @@ export default function NewPostPage() {
     setCoverImage("");
   };
 
+  if (isLoading) {
+    return (
+      <>
+        <MainNavbar />
+        <div className="min-h-screen py-12 px-4">
+          <div className="max-w-6xl mx-auto">
+            <div className="animate-pulse space-y-6">
+              <div className="h-8 bg-gray-300 rounded w-1/4"></div>
+              <div className="grid lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 space-y-4">
+                  <div className="h-96 bg-gray-300 rounded"></div>
+                </div>
+                <div className="space-y-4">
+                  <div className="h-32 bg-gray-300 rounded"></div>
+                  <div className="h-48 bg-gray-300 rounded"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <MainNavbar />
@@ -125,30 +199,69 @@ export default function NewPostPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Button asChild variant="ghost">
-                <Link href="/blog">
+                <Link href="/dashboard/posts">
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   กลับ
                 </Link>
               </Button>
-              <h1 className="text-2xl font-bold">เขียนบล็อกใหม่</h1>
+              <div>
+                <h1 className="text-2xl font-bold">แก้ไขบล็อก</h1>
+                <p className="text-sm text-gray-600 mt-1">
+                  แก้ไขล่าสุด:{" "}
+                  {post?.updatedAt
+                    ? new Date(post.updatedAt).toLocaleDateString("th-TH")
+                    : "ไม่ระบุ"}
+                </p>
+              </div>
             </div>
 
             <div className="flex gap-2">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm" disabled={isDeleting}>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    ลบ
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="flex items-center gap-2">
+                      <AlertTriangle className="w-5 h-5 text-red-500" />
+                      ยืนยันการลบโพสต์
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      คุณแน่ใจหรือไม่ที่จะลบโพสต์ &ldquo;{title}&rdquo;
+                      การดำเนินการนี้ไม่สามารถย้อนกลับได้
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDelete}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      ลบโพสต์
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+
               <Button
                 variant="outline"
                 onClick={() => handleSave(false)}
                 disabled={isSaving}
               >
                 <Save className="w-4 h-4 mr-2" />
-                บันทึกแบบร่าง
+                บันทึกการแก้ไข
               </Button>
+
               <Button
                 onClick={() => handleSave(true)}
                 disabled={isSaving}
                 className="bg-gradient-to-r from-blue-600 to-purple-600"
               >
                 <Eye className="w-4 h-4 mr-2" />
-                เผยแพร่
+                อัปเดต
               </Button>
             </div>
           </div>
@@ -156,7 +269,7 @@ export default function NewPostPage() {
           <div className="grid lg:grid-cols-3 gap-6">
             {/* Main Content */}
             <div className="lg:col-span-2">
-              {/* Title and Editor Selection - Combined */}
+              {/* Title and Editor Selection */}
               <Card className="glass-card">
                 <CardContent className="px-6 py-2 space-y-6">
                   {/* Title Section */}
@@ -196,6 +309,7 @@ export default function NewPostPage() {
                     </div>
                   </div>
                 </CardContent>
+
                 {/* Content Editor */}
                 <CardContent>
                   {contentType === "markdown" ? (
@@ -209,6 +323,31 @@ export default function NewPostPage() {
 
             {/* Sidebar */}
             <div className="space-y-6">
+              {/* Status */}
+              <Card className="glass-card">
+                <CardHeader>
+                  <CardTitle>สถานะโพสต์</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={`w-2 h-2 rounded-full ${
+                        isPublished ? "bg-green-500" : "bg-yellow-500"
+                      }`}
+                    ></div>
+                    <span className="text-sm font-medium">
+                      {isPublished ? "เผยแพร่แล้ว" : "แบบร่าง"}
+                    </span>
+                  </div>
+                  {post?.createdAt && (
+                    <p className="text-xs text-gray-600 mt-1">
+                      เผยแพร่เมื่อ:{" "}
+                      {new Date(post.createdAt).toLocaleDateString("th-TH")}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+
               {/* Category selection */}
               <Card className="glass-card">
                 <CardHeader>
@@ -216,31 +355,34 @@ export default function NewPostPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <Select value={category} onValueChange={setCategory}>
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Category" />
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="เลือกหมวดหมู่" />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories.map((category) => (
+                      {categories.map((cat) => (
                         <SelectItem
-                          key={category.id}
-                          value={category.id}
+                          key={cat.id}
+                          value={cat.id}
                           className="capitalize"
                         >
-                          <div
-                            className={`w-6 h-6 rounded-full ${category.color} flex items-center justify-center`}
-                          >
-                            <category.icon className="w-3 h-3 text-white" />
+                          <div className="flex items-center gap-2">
+                            <div
+                              className={`w-6 h-6 rounded-full ${cat.color} flex items-center justify-center`}
+                            >
+                              <cat.icon className="w-3 h-3 text-white" />
+                            </div>
+                            <span className="text-gray-800 font-medium">
+                              {cat.name}
+                            </span>
                           </div>
-                          <span className="text-gray-800 font-medium">
-                            {category.name}
-                          </span>
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </CardContent>
-                {/* Cover Image */}
               </Card>
+
+              {/* Cover Image */}
               <Card className="glass-card">
                 <CardHeader>
                   <CardTitle>รูปปก</CardTitle>
@@ -253,7 +395,7 @@ export default function NewPostPage() {
                   />
                   <Button variant="outline" className="w-full">
                     <Upload className="w-4 h-4 mr-2" />
-                    อัพโหลดรูป
+                    อัพโหลดรูปใหม่
                   </Button>
                   {/* แสดงเฉพาะเมื่อ URL ถูกต้อง */}
                   {isValidHttpUrl(coverImage) && isValidCoverImage && (
