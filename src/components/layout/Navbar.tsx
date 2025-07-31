@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import Image from "next/image";
-import { getCloudinaryUrl } from "@/helpers/cloudinary";
+import { getCloudinaryUrl } from "@/lib/upload/cloudinary";
 import { ThemeToggle } from "../ThemeToggle";
 
 export default function MainNavbar() {

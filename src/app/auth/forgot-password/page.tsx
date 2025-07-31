@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import Loading from "@/components/layout/Loading";
 import { useSession } from "next-auth/react";
+import { forgotPassword } from "@/api/auth";
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
@@ -19,25 +20,19 @@ export default function ForgotPasswordPage() {
     setError("");
 
     try {
-      const res = await fetch("/api/auth/forgot-password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email }),
-      });
-      
-      const data = await res.json();
+      const res = await forgotPassword(email);
 
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to send reset email");
+      if (res.success) {
+        setIsSuccess(true);
+        toast.success("Reset password link sent to your email");
+      } else if (res.error) {
+        throw new Error(res.error.message);
       }
-
-      setIsSuccess(true);
-      toast.success("Reset password link sent to your email");
-    } catch (err: any) {
-      setError(err.message || "Failed to send reset email");
-      toast.error(err.message || "Failed to send reset email");
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Something went wrong";
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -52,8 +47,18 @@ export default function ForgotPasswordPage() {
         <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-md p-8">
           <div className="text-center">
             <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 dark:bg-green-900 mb-4">
-              <svg className="h-6 w-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+              <svg
+                className="h-6 w-6 text-green-600 dark:text-green-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M5 13l4 4L19 7"
+                ></path>
               </svg>
             </div>
             <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">
@@ -96,7 +101,8 @@ export default function ForgotPasswordPage() {
         </h2>
 
         <p className="text-sm text-center text-gray-600 dark:text-gray-300 mb-6">
-          Enter your email address and we'll send you a link to reset your password.
+          Enter your email address and we'll send you a link to reset your
+          password.
         </p>
 
         {error && (

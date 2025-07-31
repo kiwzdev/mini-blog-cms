@@ -14,7 +14,7 @@ const prisma = new PrismaClient();
 // Custom adapter that ensures username is set
 function CustomPrismaAdapter(p: PrismaClient): Adapter {
   const baseAdapter = PrismaAdapter(p) as Adapter;
-  
+
   return {
     ...baseAdapter,
     async createUser(data: AdapterUser) {
@@ -27,7 +27,7 @@ function CustomPrismaAdapter(p: PrismaClient): Adapter {
         username: `user-${nanoid(6)}`, // Generate username
         profileImage: data.image, // Map image to profileImage
       };
-      
+
       return p.user.create({ data: userData });
     },
   };

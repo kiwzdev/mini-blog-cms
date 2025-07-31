@@ -1,9 +1,8 @@
 // app/api/upload/route.ts
 import { NextResponse } from "next/server";
 import cloudinary from "@/lib/upload/cloudinary";
-import handleAPIError from "@/helpers/errorHandling";
-import { extractPublicIdFromUrl } from "@/helpers/upload";
-import { success } from "zod";
+import { extractPublicIdFromUrl } from "@/lib/upload/cloudinary";
+import { createErrorResponse, createSuccessResponse } from "@/lib/api-response";
 
 // กำหนดขนาดไฟล์สูงสุด (5MB)
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -22,7 +21,11 @@ export async function POST(req: Request) {
     const oldPublicId = formData.get("oldPublicId") as string;
 
     if (!file) {
-      return NextResponse.json({ error: "No file provided" }, { status: 400 });
+      return createErrorResponse({
+        code: "NO_FILE",
+        message: "No file provided",
+        status: 400,
+      });
     }
 
     // ตรวจสอบขนาดไฟล์
@@ -39,12 +42,11 @@ export async function POST(req: Request) {
 
     // ตรวจสอบประเภทไฟล์
     if (!isValidImageType(file)) {
-      return NextResponse.json(
-        {
-          error: "Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed",
-        },
-        { status: 400 }
-      );
+      return createErrorResponse({
+        code: "INVALID_FILE_TYPE",
+        message: "Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed",
+        status: 400,
+      });
     }
 
     console.log(
@@ -105,8 +107,8 @@ export async function POST(req: Request) {
     console.log(`Total upload time: ${totalTime}ms`);
 
     console.log("Upload result:", uploadRes);
-    return NextResponse.json({
-      success: true,
+    return createSuccessResponse({
+      message: "File uploaded successfully",
       data: {
         url: uploadRes.secure_url,
         publicId: uploadRes.public_id,
@@ -120,11 +122,12 @@ export async function POST(req: Request) {
       },
     });
   } catch (error) {
-    const { message, status, code } = handleAPIError(error);
-    return NextResponse.json(
-      { success: false, error: message, code },
-      { status }
-    );
+    console.error("Error uploading file:", error);
+    return createErrorResponse({
+      code: "UPLOAD_ERROR",
+      message: "Failed to upload file",
+      status: 500,
+    });
   }
 }
 
@@ -142,30 +145,36 @@ export async function DELETE(req: Request) {
     }
 
     if (!targetPublicId) {
-      return NextResponse.json(
-        { error: "No public ID or valid URL provided" },
-        { status: 400 }
-      );
+      return createErrorResponse({
+        code: "NO_PUBLIC_ID",
+        message: "No public ID or valid URL provided",
+        status: 400,
+      });
     }
 
-    const deleteRes = await cloudinary.uploader.destroy(targetPublicId);
+    const deleteRes = await cloudinary.uploader.destroy(targetPublicId || "");
 
     if (deleteRes.result === "ok") {
-      return NextResponse.json({
+      return createSuccessResponse({
         message: "Image deleted successfully",
-        publicId: targetPublicId,
+        data: {
+          publicId: targetPublicId,
+        },
       });
     } else {
-      return NextResponse.json(
-        { error: "Failed to delete image", result: deleteRes.result },
-        { status: 400 }
-      );
+      return createErrorResponse({
+        code: "DELETE_ERROR",
+        message: "Failed to delete image",
+        status: 400,
+        details: deleteRes.result,
+      });
     }
   } catch (error) {
-    const { message, status, code } = handleAPIError(error);
-    return NextResponse.json(
-      { success: false, error: message, code },
-      { status }
-    );
+    console.error("Error deleting image:", error);
+    return createErrorResponse({
+      code: "DELETE_ERROR",
+      message: "Failed to delete image",
+      status: 500,
+    });
   }
 }

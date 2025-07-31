@@ -43,7 +43,7 @@ import {
 import { updatePostSchema } from "@/lib/validations/postSchema";
 import { BLOG_CATEGORIES } from "@/lib/config";
 import { IPost } from "@/types";
-import { isValidHttpUrl } from "@/helpers/image";
+import { isValidHttpUrl } from "@/lib/image";
 import Loading from "@/components/layout/Loading";
 import { uploadImage } from "@/api/upload";
 import { useLoading } from "@/stores/useLoadingStore";
@@ -77,6 +77,7 @@ export default function EditPostPage() {
       try {
         setLoading(true);
         const response = await getPostById(blogId);
+        console.log(response);
 
         if (response.success) {
           setTitle(response.data.title || "");
@@ -87,11 +88,14 @@ export default function EditPostPage() {
           setIsPublished(response.data.published || false);
           setPost(response.data);
         } else if (response.error) {
-          setError(response.error.code);
+          throw new Error(response.error.message);
         }
-      } catch (error) {
-        console.error("Error fetching post:", error);
-        toast.error("ไม่สามารถโหลดข้อมูลโพสต์ได้");
+      } catch (err: unknown) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Something went wrong";
+        console.error("Error fetching post:", errorMessage);
+        setError(errorMessage);
+        toast.error(errorMessage);
         router.push("/dashboard/posts");
       } finally {
         setLoading(false);
@@ -122,6 +126,7 @@ export default function EditPostPage() {
       // Validation with Zod
       const validation = updatePostSchema.safeParse(updatedPost);
       if (!validation.success) {
+        console.log("Error updating post:", validation.error.message);
         throw new Error(validation.error.message);
       }
 
@@ -131,8 +136,8 @@ export default function EditPostPage() {
         if (uploadResponse.success) {
           toast.success("อัปโหลดรูปภาพสําเร็จ!");
           updatedPost.coverImage = uploadResponse.data.publicId;
-        } else {
-          throw new Error("Failed to upload cover image");
+        } else if (uploadResponse.error) {
+          throw new Error(uploadResponse.error.message);
         }
       }
 
@@ -209,7 +214,7 @@ export default function EditPostPage() {
 
   if (isLoading) return <Loading />;
   if (!post && !error) return <Loading />;
-  if (error === "POST_NOT_FOUND" || !post) return notFound();
+  if (error === "Post not found" || !post) return notFound();
   else
     return (
       <>

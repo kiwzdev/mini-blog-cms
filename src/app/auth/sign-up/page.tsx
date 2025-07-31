@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 import Loading from "@/components/layout/Loading";
 import { userSchema } from "@/lib/validations/userSchema";
 import { useSession } from "next-auth/react";
+import { signUp } from "@/api/auth";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -41,42 +42,33 @@ export default function SignUpPage() {
       }
 
       // สร้างบัญชีผู้ใช้และส่งอีเมลยืนยันในคำขอเดียว
-      await axios.post("/api/auth/sign-up", {
-        name: formData.name,
-        username: formData.username,
-        email: formData.email,
-        password: formData.password,
-      });
+      const res = await signUp(formData);
+      if (res.success) {
+        toast.success(
+          "📩 สมัครเรียบร้อยแล้ว! โปรดตรวจสอบอีเมลของคุณเพื่อยืนยันบัญชี",
+          {
+            duration: 5000,
+            position: "top-center",
+          }
+        );
 
-      toast.success(
-        "📩 สมัครเรียบร้อยแล้ว! โปรดตรวจสอบอีเมลของคุณเพื่อยืนยันบัญชี",
-        {
-          duration: 5000,
+        await axios.post("/api/auth/send-verification-email", {
+          email: formData.email,
+        });
+
+        toast.success("ส่งอีเมลยืนยันใหม่แล้ว!", {
+          duration: 3000,
           position: "top-center",
-        }
-      );
-
-      await axios.post("/api/auth/send-verification-email", {
-        email: formData.email,
-      });
-
-      toast.success("ส่งอีเมลยืนยันใหม่แล้ว!", {
-        duration: 3000,
-        position: "top-center",
-      });
-      router.push("/sign-in");
-    } catch (err) {
-      // Type guard
-      if (axios.isAxiosError(err)) {
-        const message =
-          err.response?.data?.message || "เกิดข้อผิดพลาดจากฝั่งเซิร์ฟเวอร์";
-
-        setError(message);
-        toast.error(message);
-      } else {
-        setError("Something went wrong");
-        toast.error("เกิดข้อผิดพลาดบางอย่าง");
+        });
+        router.push("/sign-in");
+      } else if (res.error) {
+        throw new Error(res.error.message);
       }
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Something went wrong";
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }

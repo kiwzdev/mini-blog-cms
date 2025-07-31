@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 import Loading from "@/components/layout/Loading";
 import { useSession } from "next-auth/react";
+import { resetPassword } from "@/api/auth";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -44,28 +45,19 @@ export default function ResetPasswordPage() {
     }
 
     try {
-      const res = await fetch("/api/auth/reset-password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          token,
-          password: formData.password,
-        }),
-      });
+      const res = await resetPassword(token, formData.password);
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to reset password");
+      if (res.success) {
+        toast.success("Password reset successful");
+        router.push("/auth/sign-in");
+      } else if (res.error) {
+        throw new Error(res.error?.message);
       }
-
-      toast.success("Password reset successful");
-      router.push("/auth/sign-in");
-    } catch (err: any) {
-      setError(err.message || "Failed to reset password");
-      toast.error(err.message || "Failed to reset password");
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Something went wrong";
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }

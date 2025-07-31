@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { sendVerificationEmail } from "@/lib/email/sendVerificationEmail";
 import { v4 as uuidv4 } from "uuid";
 import { PrismaClient } from "@prisma/client";
-import handleAPIError from "@/helpers/errorHandling";
+import { createErrorResponse, createSuccessResponse } from "@/lib/api-response";
 
 const prisma = new PrismaClient();
 
@@ -13,21 +13,22 @@ export async function POST(req: Request) {
     const { email } = body;
 
     // ตรวจสอบว่ามี token ที่ยังใช้ได้อยู่หรือไม่
-    const existingToken = await prisma.verificationToken.findFirst({
+    const existingToken = await prisma.verificationEmailToken.findFirst({
       where: {
         email,
-        expires: { gt: new Date() }
-      }
+        expires: { gt: new Date() },
+      },
     });
 
     if (existingToken) {
       // หากมี token ที่ยังใช้ได้ ให้ส่งอีเมลใหม่ด้วย token เดิม
       await sendVerificationEmail(email, existingToken.token);
 
-      return NextResponse.json({
-        success: true,
-        message: "ส่งอีเมลยืนยันแล้ว กรุณาตรวจสอบกล่องจดหมายของคุณ",
-        tokenExpiry: existingToken.expires,
+      return createSuccessResponse({
+        message: "Verification email sent successfully",
+        data: {
+          tokenExpiry: existingToken.expires,
+        },
       });
     }
 
@@ -36,36 +37,37 @@ export async function POST(req: Request) {
     const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 ชั่วโมง
 
     // ลบ token เก่าที่หมดอายุ
-    await prisma.verificationToken.deleteMany({
+    await prisma.verificationEmailToken.deleteMany({
       where: {
         email,
-        expires: { lt: new Date() }
-      }
+        expires: { lt: new Date() },
+      },
     });
 
     // สร้าง token ใหม่
-    await prisma.verificationToken.create({
+    await prisma.verificationEmailToken.create({
       data: {
         email: email.toLowerCase(),
         token,
         expires,
-      }
+      },
     });
 
     // ส่งอีเมล
     await sendVerificationEmail(email, token);
 
-    return NextResponse.json({
-      success: true,
-      message: "ส่งอีเมลยืนยันสำเร็จ กรุณาตรวจสอบกล่องจดหมายของคุณ",
-      tokenExpiry: expires,
+    return createSuccessResponse({
+      message: "Verification email sent successfully",
+      data: {
+        tokenExpiry: expires,
+      },
     });
   } catch (error) {
-    const { message, status, code } = handleAPIError(error);
-    return NextResponse.json(
-      { success: false, error: message, code },
-      { status }
-    );
+    console.error("Error sending verification email:", error);
+    return createErrorResponse({
+      code: "SEND_VERIFICATION_EMAIL_ERROR",
+      message: "Error sending verification email",
+    });
   } finally {
     await prisma.$disconnect();
   }

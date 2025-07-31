@@ -42,6 +42,7 @@ export interface IUserProfile {
 
 export interface signUpData {
   name: string;
+  username: string;
   email: string;
   password: string;
 }

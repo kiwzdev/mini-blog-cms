@@ -1,6 +1,6 @@
+import { handleApiError } from "@/lib/api-response";
 import { ApiResponse } from "@/types/api";
 import axios from "axios";
-import { handleApiError } from ".";
 
 // Post Comments
 export const getPostComments = async (

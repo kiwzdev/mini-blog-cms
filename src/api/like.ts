@@ -1,6 +1,6 @@
 import { ApiResponse } from "@/types/api";
 import axios from "axios";
-import { handleApiError } from ".";
+import { handleApiError } from "@/lib/api-response";
 
 // Post Like Actions (สำหรับการกระทำ)
 export const likePost = async (postId: string): Promise<ApiResponse> => {

@@ -1,23 +1,27 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { getImageUrl } from "@/helpers/image";
+import { getImageUrl } from "@/lib/image";
 import { formatDate } from "@/lib/utils";
 import { IPostCard } from "@/types";
 import { Clock, Heart, MessageCircle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect } from "react";
 
 function PostCard({ post }: { post: IPostCard }) {
+  useEffect(() => {
+    console.log(post.coverImage);
+  });
   return (
     <Card className="glass-card overflow-hidden hover:scale-105 transition-all duration-300 group">
       {/* Cover Image */}
       <div className="relative h-48 overflow-hidden">
         <Image
-            src={
-              post.coverImage
-                ? getImageUrl(post.coverImage)  
-                : process.env.NEXT_PUBLIC_DEFAULT_POST_IMAGE!
-            }
+          src={
+            post.coverImage
+              ? getImageUrl(post.coverImage)
+              : process.env.NEXT_PUBLIC_DEFAULT_POST_IMAGE!
+          }
           alt={post.title}
           fill
           className="object-cover group-hover:scale-110 transition-transform duration-300"

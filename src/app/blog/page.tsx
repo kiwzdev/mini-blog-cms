@@ -19,9 +19,9 @@ import {
 import { IPostCard } from "@/types";
 import { useLoading } from "@/stores/useLoadingStore";
 import { getAllPosts } from "@/api/post";
-import { notFound } from "next/navigation";
 import Loading from "@/components/layout/Loading";
 import { BLOG_CATEGORIES } from "@/lib/config";
+import toast from "react-hot-toast";
 
 export default function BlogPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -46,25 +46,30 @@ export default function BlogPage() {
       setLoading(true);
       try {
         fetchPosts();
-      } catch (error) {
-        console.error("Error fetching posts:", error);
-        setPosts([]);
+      } catch (err: unknown) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Something went wrong";
+        toast.error(errorMessage);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     fetchPost();
   }, []);
 
   const fetchPosts = async (page = 1) => {
-    const result = await getAllPosts({
+    const response = await getAllPosts({
       page,
       limit: 10,
       includeDetails: false,
     });
-
-    setPosts(result.posts);
-    setPagination(result.pagination);
+    if (response.success) {
+      setPosts(response.data.posts);
+      setPagination(response.data.pagination);
+    } else if (response.error) {
+      throw new Error(response.error.message);
+    }
   };
 
   const handlePageChange = (newPage: number) => {

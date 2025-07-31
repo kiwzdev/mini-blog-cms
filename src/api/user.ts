@@ -1,6 +1,6 @@
 import { ApiResponse } from "@/types/api";
 import axios from "axios";
-import { handleApiError } from ".";
+import { handleApiError } from "@/lib/api-response";
 
 // For User profile page
 export const getUserPosts = async (userId: string): Promise<ApiResponse> => {

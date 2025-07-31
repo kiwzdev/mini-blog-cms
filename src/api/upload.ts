@@ -1,6 +1,6 @@
 import { ApiResponse } from "@/types/api";
 import axios from "axios";
-import { handleApiError } from ".";
+import { handleApiError } from "@/lib/api-response";
 
 // Upload API Functions
 export const uploadImage = async (

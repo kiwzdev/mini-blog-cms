@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import prisma from "@/lib/db";
 import { ICreatePostInput } from "@/types";
+import { createErrorResponse, createSuccessResponse } from "@/lib/api-response";
 
 // GET /api/posts - Get all posts with pagination and filters
 export async function GET(request: NextRequest) {
@@ -47,21 +48,24 @@ export async function GET(request: NextRequest) {
 
     const total = await prisma.post.count({ where: whereClause });
 
-    return NextResponse.json({
-      posts,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit),
+    return createSuccessResponse({
+      data: {
+        posts,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit),
+        },
       },
+      message: "Posts fetched successfully",
     });
   } catch (error) {
     console.error("Error fetching posts:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch posts" },
-      { status: 500 }
-    );
+    return createErrorResponse({
+      code: "FETCH_POSTS_ERROR",
+      message: "Failed to fetch posts",
+    });
   }
 }
 
@@ -69,11 +73,15 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!session) {
+      return createErrorResponse({
+        code: "UNAUTHORIZED",
+        message: "You must be logged in to create a post",
+        status: 401,
+      });
     }
 
-    const body:ICreatePostInput = await request.json();
+    const body: ICreatePostInput = await request.json();
     const {
       title,
       content,
@@ -86,7 +94,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     const post = await prisma.post.create({
-      data: { 
+      data: {
         title,
         slug,
         content,
@@ -95,7 +103,7 @@ export async function POST(request: NextRequest) {
         coverImage,
         published,
         category,
-        authorId: session.user.id,
+        authorId: session?.user.id,
       },
       include: {
         author: {
@@ -115,12 +123,15 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(post);
+    return createSuccessResponse({
+      data: post,
+      message: "Post created successfully",
+    });
   } catch (error) {
     console.error("Error creating post:", error);
-    return NextResponse.json(
-      { error: "Failed to create post" },
-      { status: 500 }
-    );
+    return createErrorResponse({
+      code: "CREATE_POST_ERROR",
+      message: "Failed to create post",
+    });
   }
 }

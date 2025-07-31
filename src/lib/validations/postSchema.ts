@@ -36,11 +36,7 @@ export const createPostSchema = z.object({
     .max(500, "Excerpt must be at most 500 characters")
     .optional(),
 
-  coverImage: z
-    .string()
-    .trim()
-    .url("Cover image must be a valid URL")
-    .optional(),
+  coverImage: z.string().trim().optional(),
 
   published: z.boolean().optional().default(false),
 
@@ -89,11 +85,7 @@ export const updatePostSchema = z.object({
     .max(500, "Excerpt must be at most 500 characters")
     .optional(),
 
-  coverImage: z
-    .string()
-    .trim()
-    .url("Cover image must be a valid URL")
-    .optional(),
+  coverImage: z.string().trim().optional(),
 
   published: z.boolean().optional(),
 

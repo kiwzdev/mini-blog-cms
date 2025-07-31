@@ -13,9 +13,9 @@ import { getPostById } from "@/api/post";
 import { IPost } from "@/types";
 import Loading from "@/components/layout/Loading";
 import { useLoading } from "@/stores/useLoadingStore";
-import { isOwner } from "@/helpers/auth";
+import { isOwner } from "@/lib/auth";
 import { useSession } from "next-auth/react";
-import { getImageUrl } from "@/helpers/image";
+import { getImageUrl } from "@/lib/image";
 
 export default function BlogPostPage() {
   const params = useParams<{ blogId: string }>();
@@ -38,11 +38,13 @@ export default function BlogPostPage() {
         if (response.success) {
           setPost(response.data as IPost);
         } else if (response.error) {
-          setError(response.error.code);
+          throw new Error(response.error.message);
         }
-      } catch (error) {
-        console.log("Catch error:", error);
-        setError("UNKNOWN_ERROR");
+      } catch (err: unknown) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Something went wrong";
+        console.error("Error fetching post:", errorMessage);
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -53,7 +55,7 @@ export default function BlogPostPage() {
 
   if (isLoading) return <Loading />;
   if (!post && !error) return <Loading />;
-  if (error === "POST_NOT_FOUND" || !post) return notFound();
+  if (error === "Post not found" || !post) return notFound();
   else
     return (
       <div className="min-h-screen py-8 px-4">

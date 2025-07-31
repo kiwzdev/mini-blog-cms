@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
-import handleAPIError from "@/helpers/errorHandling";
+import { createErrorResponse, createSuccessResponse } from "@/lib/api-response";
 
 const prisma = new PrismaClient();
 
@@ -12,26 +12,20 @@ export async function POST(req: NextRequest) {
     const { token, password } = await req.json();
 
     if (!token || !password) {
-      return NextResponse.json(
-        { error: "Token and password are required" },
-        { status: 400 }
-      );
-    }
-
-    if (password.length < 6) {
-      return NextResponse.json(
-        { error: "Password must be at least 6 characters" },
-        { status: 400 }
-      );
+      return createErrorResponse({
+        code: "NO_TOKEN_OR_PASSWORD",
+        message: "No token or password provided",
+        status: 400,
+      });
     }
 
     // Find all reset tokens that are not used and not expired
     const resetTokens = await prisma.passwordResetToken.findMany({
       where: {
         used: false,
-        expiresAt: { gt: new Date() }
+        expiresAt: { gt: new Date() },
       },
-      include: { user: true }
+      include: { user: true },
     });
 
     let validToken = null;
@@ -47,11 +41,20 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    if (!validToken || !user) {
-      return NextResponse.json(
-        { error: "Invalid or expired reset token" },
-        { status: 400 }
-      );
+    if (!user) {
+      return createErrorResponse({
+        code: "USER_NOT_FOUND",
+        message: "User not found",
+        status: 400,
+      });
+    }
+
+    if (!validToken) {
+      return createErrorResponse({
+        code: "INVALID_TOKEN",
+        message: "Invalid reset token",
+        status: 400,
+      });
     }
 
     // Hash the new password
@@ -60,30 +63,29 @@ export async function POST(req: NextRequest) {
     // Update user's password
     await prisma.user.update({
       where: { id: user.id },
-      data: { password: hashedPassword }
+      data: { password: hashedPassword },
     });
 
     // Mark token as used
     await prisma.passwordResetToken.update({
       where: { id: validToken.id },
-      data: { used: true }
+      data: { used: true },
     });
 
     // Delete all reset tokens for this user
-    await prisma.passwordResetToken.deleteMany({ 
-      where: { userId: user.id }
+    await prisma.passwordResetToken.deleteMany({
+      where: { userId: user.id },
     });
 
-    return NextResponse.json(
-      { message: "Password reset successful" },
-      { status: 200 }
-    );
+    return createSuccessResponse({
+      message: "Password reset successfully",
+    });
   } catch (error) {
-    const { message, status, code } = handleAPIError(error);
-    return NextResponse.json(
-      { success: false, error: message, code },
-      { status }
-    );
+    console.error("Error resetting password:", error);
+    return createErrorResponse({
+      code: "RESET_PASSWORD_ERROR",
+      message: "Error resetting password",
+    });
   } finally {
     await prisma.$disconnect();
   }

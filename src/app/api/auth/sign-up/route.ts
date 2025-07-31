@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
-import handleAPIError from "@/helpers/errorHandling";
+import { createErrorResponse, createSuccessResponse } from "@/lib/api-response";
 
 const prisma = new PrismaClient();
 
@@ -11,7 +11,11 @@ export async function POST(req: NextRequest) {
     const { username, name, email, password } = body;
 
     if (!username || !email || name || !password) {
-      return NextResponse.json({ message: "Missing fields" }, { status: 400 });
+      return createErrorResponse({
+        code: "MISSING_FIELDS",
+        message: "Missing required fields",
+        status: 400,
+      });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -24,10 +28,11 @@ export async function POST(req: NextRequest) {
     });
 
     if (existingEmail) {
-      return NextResponse.json(
-        { message: "Email already exists" },
-        { status: 409 }
-      );
+      return createErrorResponse({
+        code: "EMAIL_EXISTS",
+        message: "Email already exists",
+        status: 409,
+      });
     }
 
     // Check if username already exists
@@ -37,7 +42,13 @@ export async function POST(req: NextRequest) {
 
     if (existingUsername) {
       return NextResponse.json(
-        { message: "Username already exists" },
+        {
+          success: false,
+          error: {
+            code: "USERNAME_EXISTS",
+            message: "Username already exists",
+          },
+        },
         { status: 409 }
       );
     }
@@ -52,13 +63,16 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({ message: "User created" }, { status: 201 });
+    return createSuccessResponse({
+      message: "Sign up successful",
+      status: 201,
+    });
   } catch (error) {
-    const { message, status, code } = handleAPIError(error);
-    return NextResponse.json(
-      { success: false, error: message, code },
-      { status }
-    );
+    console.error("Sign up failed:", error);
+    return createErrorResponse({
+      code: "SIGNUP_ERROR",
+      message: "Sign up failed",
+    });
   } finally {
     await prisma.$disconnect();
   }

@@ -1,5 +1,5 @@
 "use client";
-
+import { verifyEmail as verifyEmailAPI } from "@/api/auth";
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle, XCircle, Loader2, AlertCircle } from "lucide-react";
@@ -13,7 +13,7 @@ type VerificationStatus =
 
 export default function VerifyPage() {
   const [status, setStatus] = useState<VerificationStatus>("loading");
-  const [message, setMessage] = useState<string>("กำลังตรวจสอบ...");
+  const [message, setMessage] = useState<string | undefined>("กำลังตรวจสอบ...");
   const [countdown, setCountdown] = useState<number>(3);
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -29,17 +29,11 @@ export default function VerifyPage() {
 
     const verifyEmail = async () => {
       try {
-        const response = await fetch("/api/auth/verify-email", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token }),
-        });
+        const res = await verifyEmailAPI(token);
 
-        const data = await response.json();
-
-        if (data.success) {
+        if (res.success) {
           setStatus("success");
-          setMessage(data.message);
+          setMessage(res?.message);
 
           // เริ่มนับถอยหลัง
           let count = 3;
@@ -52,21 +46,21 @@ export default function VerifyPage() {
               router.replace("/auth/sign-in");
             }
           }, 1000);
-        } else {
+        } else if (res.error) {
           // จัดการ error แบบละเอียด
-          if (data.message.includes("หมดอายุ")) {
+          if (res.error.message.includes("expired")) {
             setStatus("expired");
-          } else if (data.message.includes("ยืนยันแล้ว")) {
+          } else if (res.error.message.includes("already")) {
             setStatus("already_verified");
           } else {
             setStatus("error");
           }
-          setMessage(data.message);
+          throw new Error(res.error.message);
         }
-      } catch (error) {
-        console.error("Verification error:", error);
-        setStatus("error");
-        setMessage("เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองอีกครั้ง");
+      } catch (err: unknown) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Something went wrong";
+        setMessage(errorMessage);
       }
     };
 

@@ -3,8 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { sendPasswordResetEmail } from "@/lib/email/sendResetToken"; // You'll need to implement this
-import handleAPIError from "@/helpers/errorHandling";
 import { PrismaClient } from "@prisma/client";
+import { createSuccessResponse } from "@/lib/api-response";
+import { createErrorResponse } from "@/lib/api-response";
 
 const prisma = new PrismaClient();
 
@@ -21,15 +22,14 @@ export async function POST(req: NextRequest) {
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       // Return success even if user doesn't exist for security
-      return NextResponse.json(
-        { message: "If the email exists, a reset link has been sent" },
-        { status: 200 }
-      );
+      return createSuccessResponse({
+        message: "Password reset email sent successfully",
+      });
     }
 
     // Delete any existing reset tokens for this user
-    await prisma.passwordResetToken.deleteMany({ 
-      where: { userId: user.id } 
+    await prisma.passwordResetToken.deleteMany({
+      where: { userId: user.id },
     });
 
     // Generate reset token
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
         userId: user.id,
         token: hashedToken,
         expiresAt: new Date(Date.now() + 3600000), // 1 hour from now
-      }
+      },
     });
 
     // Send reset email
@@ -53,16 +53,15 @@ export async function POST(req: NextRequest) {
     // For development, log the reset URL
     console.log("Password reset URL:", resetUrl);
 
-    return NextResponse.json(
-      { message: "If the email exists, a reset link has been sent" },
-      { status: 200 }
-    );
+    return createSuccessResponse({
+      message: "Password reset email sent successfully",
+    });
   } catch (error) {
-    const { message, status, code } = handleAPIError(error);
-    return NextResponse.json(
-      { success: false, error: message, code },
-      { status }
-    );
+    console.error("Error sending password reset email:", error);
+    return createErrorResponse({
+      code: "FORGOT_PASSWORD_ERROR",
+      message: "Error sending password reset email",
+    });
   } finally {
     await prisma.$disconnect();
   }

@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createPostSchema } from "@/lib/validations/postSchema";
-import { isValidHttpUrl } from "@/helpers/image";
+import { isValidHttpUrl } from "@/lib/image";
 import Loading from "@/components/layout/Loading";
 import { BLOG_CATEGORIES } from "@/lib/config";
 import { uploadImage } from "@/api/upload";
@@ -73,17 +73,22 @@ export default function NewPostPage() {
       }
 
       // Create the post
-      const result = await createPost(createdPost);
+      const response = await createPost(createdPost);
 
-      if (publish) {
-        toast.success("เผยแพร่โพสต์สำเร็จ!");
-        router.push(`/dashboard/posts/${result.id}`);
-      } else {
-        toast.success("บันทึกแบบร่างสำเร็จ!");
+      if (response.success) {
+        if (publish) {
+          toast.success("เผยแพร่โพสต์สำเร็จ!");
+          router.push(`/dashboard/posts/${response.data.id}`);
+        } else {
+          toast.success("บันทึกแบบร่างสำเร็จ!");
+        }
+      } else if (response.error) {
+        throw new Error(response.error.message);
       }
-    } catch (error) {
-      console.error("Error creating post:", error);
-      toast.error("เกิดข้อผิดพลาดในการสร้างโพสต์");
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Something went wrong";
+      toast.error(errorMessage);
     } finally {
       setIsSaving(false);
     }
