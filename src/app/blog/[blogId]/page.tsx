@@ -15,8 +15,7 @@ import Loading from "@/components/layout/Loading";
 import { useLoading } from "@/stores/useLoadingStore";
 import { isOwner } from "@/helpers/auth";
 import { useSession } from "next-auth/react";
-import { getCloudinaryUrl } from "@/helpers/cloudinary";
-import { getImageUrl, isValidHttpUrl } from "@/helpers/image";
+import { getImageUrl } from "@/helpers/image";
 
 export default function BlogPostPage() {
   const params = useParams<{ blogId: string }>();
@@ -26,31 +25,35 @@ export default function BlogPostPage() {
 
   const [post, setPost] = useState<IPost | null>(null);
   const { isLoading, setLoading } = useLoading(`blog-post-${blogId}`);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    try {
+    const fetchPost = async () => {
       setLoading(true);
-      fetchPost();
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+      setError(null); // clear error ก่อน
+
+      try {
+        const response = await getPostById(blogId);
+
+        if (response.success) {
+          setPost(response.data as IPost);
+        } else if (response.error) {
+          setError(response.error.code);
+        }
+      } catch (error) {
+        console.log("Catch error:", error);
+        setError("UNKNOWN_ERROR");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPost();
   }, []);
 
-  const fetchPost = async () => {
-    setLoading(true);
-    const fetchedPost = await getPostById(blogId);
-
-    if (fetchedPost) {
-      setPost(fetchedPost);
-    } else {
-      notFound();
-    }
-    setLoading(false);
-  };
-
-  if (isLoading || !post) return <Loading />;
+  if (isLoading) return <Loading />;
+  if (!post && !error) return <Loading />;
+  if (error === "POST_NOT_FOUND" || !post) return notFound();
   else
     return (
       <div className="min-h-screen py-8 px-4">

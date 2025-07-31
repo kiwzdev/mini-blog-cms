@@ -59,7 +59,16 @@ export async function GET(
     });
 
     if (!post) {
-      return NextResponse.json({ error: "Post not found" }, { status: 404 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "POST_NOT_FOUND",
+            message: "Post not found",
+          },
+        },
+        { status: 404 }
+      );
     }
 
     // Check if post is published or user is the author
@@ -72,7 +81,7 @@ export async function GET(
   } catch (error) {
     console.error("Error fetching post:", error);
     return NextResponse.json(
-      { error: "Failed to fetch post" },
+      { success: false, error: "Failed to fetch post" },
       { status: 500 }
     );
   }
@@ -86,7 +95,16 @@ export async function PUT(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "Unauthorized",
+            message: "You must be logged in to update a post",
+          },
+        },
+        { status: 401 }
+      );
     }
 
     const { postId } = await params;
@@ -99,11 +117,29 @@ export async function PUT(
     });
 
     if (!existingPost) {
-      return NextResponse.json({ error: "Post not found" }, { status: 404 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "POST_NOT_FOUND",
+            message: "Post not found",
+          },
+        },
+        { status: 404 }
+      );
     }
 
     if (existingPost.authorId !== session.user.id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "Forbidden",
+            message: "You don't have permission to update this post",
+          },
+        },
+        { status: 403 }
+      );
     }
 
     const {
@@ -154,10 +190,16 @@ export async function PUT(
     return NextResponse.json(post);
   } catch (error) {
     console.error("Error updating post:", error);
-    return NextResponse.json(
-      { error: "Failed to update post" },
-      { status: 500 }
-    );
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "UPDATE_POST_ERROR",
+            message: "Failed to update posts",
+          },
+        },
+        { status: 500 }
+      );
   }
 }
 

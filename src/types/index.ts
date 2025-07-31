@@ -46,12 +46,6 @@ export interface signUpData {
   password: string;
 }
 
-export interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  message?: string;
-}
-
 export interface IPostCard {
   id: string;
   title: string;

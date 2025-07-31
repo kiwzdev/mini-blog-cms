@@ -40,10 +40,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {
-  createPostSchema,
-  updatePostSchema,
-} from "@/lib/validations/postSchema";
+import { updatePostSchema } from "@/lib/validations/postSchema";
 import { BLOG_CATEGORIES } from "@/lib/config";
 import { IPost } from "@/types";
 import { isValidHttpUrl } from "@/helpers/image";
@@ -70,6 +67,7 @@ export default function EditPostPage() {
   const [isPublished, setIsPublished] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { isLoading, setLoading } = useLoading(`blog-post-${blogId}`);
+  const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [post, setPost] = useState<IPost | null>(null);
 
@@ -78,16 +76,18 @@ export default function EditPostPage() {
     const fetchPost = async () => {
       try {
         setLoading(true);
-        const postData = await getPostById(blogId);
+        const response = await getPostById(blogId);
 
-        if (postData) {
-          setTitle(postData.title || "");
-          setContent(postData.content || "");
-          setContentType(postData.contentType || "markdown");
-          setCategory(postData.category || "");
-          setCoverImage(postData.coverImage || "");
-          setIsPublished(postData.published || false);
-          setPost(postData);
+        if (response.success) {
+          setTitle(response.data.title || "");
+          setContent(response.data.content || "");
+          setContentType(response.data.contentType || "markdown");
+          setCategory(response.data.category || "");
+          setCoverImage(response.data.coverImage || "");
+          setIsPublished(response.data.published || false);
+          setPost(response.data);
+        } else if (response.error) {
+          setError(response.error.code);
         }
       } catch (error) {
         console.error("Error fetching post:", error);
@@ -127,21 +127,27 @@ export default function EditPostPage() {
 
       // Upload cover image
       if (coverImageFile) {
-        const uploadResult = await uploadImage(coverImageFile, coverImage);
-        if (!uploadResult.success) {
+        const uploadResponse = await uploadImage(coverImageFile, coverImage);
+        if (uploadResponse.success) {
+          toast.success("อัปโหลดรูปภาพสําเร็จ!");
+          updatedPost.coverImage = uploadResponse.data.publicId;
+        } else {
           throw new Error("Failed to upload cover image");
         }
-        updatedPost.coverImage = uploadResult.data.publicId;
       }
 
       // Update the post
-      const result = await updatePost(blogId, updatedPost);
+      const updateResponse = await updatePost(blogId, updatedPost);
 
-      if (publish) {
-        toast.success("อัปเดตและเผยแพร่โพสต์สำเร็จ!");
-        router.push(`/blog/${result.id}`);
-      } else {
-        toast.success("บันทึกการแก้ไขสำเร็จ!");
+      if (updateResponse.success) {
+        if (publish) {
+          toast.success("อัปเดตและเผยแพร่โพสต์สำเร็จ!");
+          router.push(`/blog/${updateResponse.data.id}`);
+        } else {
+          toast.success("บันทึกการแก้ไขสำเร็จ!");
+        }
+      } else if (updateResponse.error) {
+        setError(updateResponse.error.code);
       }
     } catch (error) {
       console.error("Error updating post:", error);
@@ -202,6 +208,8 @@ export default function EditPostPage() {
   };
 
   if (isLoading) return <Loading />;
+  if (!post && !error) return <Loading />;
+  if (error === "POST_NOT_FOUND" || !post) return notFound();
   else
     return (
       <>
