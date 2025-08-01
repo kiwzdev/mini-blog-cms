@@ -16,15 +16,23 @@ export const getPostComments = async (
 
 export const createPostComment = async (
   postId: string,
-  commentData: {
-    content: string;
-    userId: string;
-  }
+  comment: string
 ): Promise<ApiResponse> => {
   try {
-    const { data } = await axios.post(
-      `/api/posts/${postId}/comments`,
-      commentData
+    const { data } = await axios.post(`/api/posts/${postId}/comments`, comment);
+    return data;
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
+
+export const deletePostComment = async (
+  postId: string,
+  commentId: string
+): Promise<ApiResponse> => {
+  try {
+    const { data } = await axios.delete(
+      `/api/posts/${postId}/comments/${commentId}`
     );
     return data;
   } catch (error) {
@@ -34,15 +42,13 @@ export const createPostComment = async (
 
 export const editPostComment = async (
   postId: string,
-  commentData: {
-    content: string;
-    userId: string;
-  }
+  commentId: string,
+  content: string
 ): Promise<ApiResponse> => {
   try {
     const { data } = await axios.put(
-      `/api/posts/${postId}/comments`,
-      commentData
+      `/api/posts/${postId}/comments/${commentId}`,
+      content
     );
     return data;
   } catch (error) {

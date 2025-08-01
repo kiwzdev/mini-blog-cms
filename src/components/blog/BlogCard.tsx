@@ -1,17 +1,20 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useLike } from "@/hooks/useLike";
 import { getImageUrl } from "@/lib/image";
 import { formatDate } from "@/lib/utils";
-import { IPostCard } from "@/types";
+import { IBlogCard } from "@/types/blog";
 import { Clock, Heart, MessageCircle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect } from "react";
 
-function PostCard({ post }: { post: IPostCard }) {
-  useEffect(() => {
-    console.log(post.coverImage);
-  });
+function PostCard({ post }: { post: IBlogCard }) {
+  const { isLiked, likeCount, isLiking, toggleLike } = useLike(
+    post.id,
+    post.isLiked,
+    post._count ? post._count.likes : 0
+  );
+
   return (
     <Card className="glass-card overflow-hidden hover:scale-105 transition-all duration-300 group">
       {/* Cover Image */}
@@ -66,8 +69,14 @@ function PostCard({ post }: { post: IPostCard }) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4 text-sm text-slate-500">
             <div className="flex items-center gap-1">
-              <Heart className="w-4 h-4" />
-              {(post._count && post._count.likes) || 0}
+              <button onClick={toggleLike} disabled={isLiking}>
+                {isLiked ? (
+                  <Heart color="red" className="w-4 h-4" />
+                ) : (
+                  <Heart className="w-4 h-4" />
+                )}
+              </button>
+              {likeCount || 0}
             </div>
             <div className="flex items-center gap-1">
               <MessageCircle className="w-4 h-4" />

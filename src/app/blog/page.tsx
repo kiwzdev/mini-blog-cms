@@ -5,8 +5,8 @@ import { useState, Suspense, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import PostCardSkeleton from "@/components/blog/post/PostCardSkeleton";
-import PostCard from "@/components/blog/post/PostCard";
+import PostCardSkeleton from "@/components/blog/BlogCardSkeleton";
+import PostCard from "@/components/blog/BlogCard";
 import MainNavbar from "@/components/layout/Navbar";
 import {
   Search,
@@ -16,7 +16,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { IPostCard } from "@/types";
+import { IBlogCard } from "@/types/blog";
 import { useLoading } from "@/stores/useLoadingStore";
 import { getAllPosts } from "@/api/post";
 import Loading from "@/components/layout/Loading";
@@ -31,7 +31,7 @@ export default function BlogPage() {
     "all"
   );
 
-  const [posts, setPosts] = useState<IPostCard[] | null>(null);
+  const [posts, setPosts] = useState<IBlogCard[] | null>(null);
   const { isLoading, setLoading } = useLoading(`blog-feed`);
 
   const [pagination, setPagination] = useState<{
@@ -400,7 +400,7 @@ export default function BlogPage() {
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                   <Suspense fallback={<PostCardSkeleton />}>
                     {sortedPosts.map((post) => (
-                      <PostCard key={post.id} post={post as IPostCard} />
+                      <PostCard key={post.id} post={post as IBlogCard} />
                     ))}
                   </Suspense>
                 </div>

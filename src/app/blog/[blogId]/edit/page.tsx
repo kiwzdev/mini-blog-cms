@@ -42,7 +42,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { updatePostSchema } from "@/lib/validations/postSchema";
 import { BLOG_CATEGORIES } from "@/lib/config";
-import { IPost } from "@/types";
+import { IBlog } from "@/types/blog";
 import { isValidHttpUrl } from "@/lib/image";
 import Loading from "@/components/layout/Loading";
 import { uploadImage } from "@/api/upload";
@@ -69,7 +69,7 @@ export default function EditPostPage() {
   const { isLoading, setLoading } = useLoading(`blog-post-${blogId}`);
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [post, setPost] = useState<IPost | null>(null);
+  const [post, setPost] = useState<IBlog | null>(null);
 
   // Load existing post data
   useEffect(() => {

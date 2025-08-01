@@ -1,5 +1,5 @@
 // API Functions for Social Media App
-import { ICreatePostInput, IUpdatePostInput } from "@/types";
+import { ICreateBlogInput, IUpdateBlogInput } from "@/types/user";
 import { ApiResponse } from "@/types/api";
 import axios from "axios";
 import { handleApiError } from "@/lib/api-response";
@@ -31,7 +31,7 @@ export const getPostById = async (postId: string): Promise<ApiResponse> => {
 
 // Post Actions
 export const createPost = async (
-  postData: ICreatePostInput
+  postData: ICreateBlogInput
 ): Promise<ApiResponse> => {
   try {
     const { data } = await axios.post("/api/posts", postData);
@@ -43,7 +43,7 @@ export const createPost = async (
 
 export const updatePost = async (
   postId: string,
-  postData: IUpdatePostInput
+  postData: IUpdateBlogInput
 ): Promise<ApiResponse> => {
   try {
     const { data } = await axios.put(`/api/posts/${postId}`, postData);

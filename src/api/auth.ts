@@ -1,9 +1,9 @@
-import { signUpData } from "@/types";
+import { SignUpData } from "@/types/auth";
 import { ApiResponse } from "@/types/api";
 import { handleApiError } from "@/lib/api-response";
 import axios from "axios";
 
-export const signUp = async (userData: signUpData): Promise<ApiResponse> => {
+export const signUp = async (userData: SignUpData): Promise<ApiResponse> => {
   try {
     const { data } = await axios.post("/api/auth/signup", userData);
     return data;

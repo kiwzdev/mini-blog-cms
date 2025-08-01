@@ -2,12 +2,14 @@ import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import prisma from "@/lib/db";
-import { ICreatePostInput } from "@/types";
+import { ICreateBlogInput } from "@/types/user";
 import { createErrorResponse, createSuccessResponse } from "@/lib/api-response";
 
 // GET /api/posts - Get all posts with pagination and filters
 export async function GET(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get("userId");
     const limit = parseInt(searchParams.get("limit") || "10");
@@ -35,6 +37,17 @@ export async function GET(request: NextRequest) {
             username: true,
           },
         },
+        // ดึงข้อมูล likes เสมอเพื่อตรวจสอบ isLiked
+        likes: session?.user?.id
+          ? {
+              where: {
+                userId: session.user.id,
+              },
+              select: {
+                id: true,
+              },
+            }
+          : false,
         ...(includeDetails && {
           _count: {
             select: {
@@ -46,11 +59,18 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    // เพิ่ม isLiked ให้กับแต่ละ post
+    const postsWithLikeStatus = posts.map((post) => ({
+      ...post,
+      isLiked: session?.user?.id ? post.likes.length > 0 : false,
+      likes: undefined, // ลบ likes array ออกเพื่อไม่ให้ response ใหญ่เกินไป
+    }));
+
     const total = await prisma.post.count({ where: whereClause });
 
     return createSuccessResponse({
       data: {
-        posts,
+        posts: postsWithLikeStatus,
         pagination: {
           page,
           limit,
@@ -81,7 +101,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const body: ICreatePostInput = await request.json();
+    const body: ICreateBlogInput = await request.json();
     const {
       title,
       content,

@@ -77,8 +77,17 @@ export async function GET(
       });
     }
 
+    const isLiked = session?.user?.id
+      ? post.likes.some((like) => like.user.id === session.user.id)
+      : false;
+
+    const responseData = {
+      ...post,
+      isLiked,
+    };
+
     return createSuccessResponse({
-      data: post,
+      data: responseData,
       message: "Post fetched successfully",
     });
   } catch (error) {
