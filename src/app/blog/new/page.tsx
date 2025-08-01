@@ -78,7 +78,7 @@ export default function NewPostPage() {
       if (response.success) {
         if (publish) {
           toast.success("เผยแพร่โพสต์สำเร็จ!");
-          router.push(`/dashboard/posts/${response.data.id}`);
+          router.push(`/blog/${response.data.id}`);
         } else {
           toast.success("บันทึกแบบร่างสำเร็จ!");
         }

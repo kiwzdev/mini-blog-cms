@@ -1,7 +1,7 @@
 // app/api/upload/route.ts
 import { NextResponse } from "next/server";
-import cloudinary from "@/lib/upload/cloudinary";
-import { extractPublicIdFromUrl } from "@/lib/upload/cloudinary";
+import cloudinary from "@/lib/cloudinary";
+import { extractPublicIdFromUrl } from "@/lib/image/cloudinary";
 import { createErrorResponse, createSuccessResponse } from "@/lib/api-response";
 
 // กำหนดขนาดไฟล์สูงสุด (5MB)

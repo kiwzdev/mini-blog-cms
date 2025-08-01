@@ -1,4 +1,4 @@
-import { getCloudinaryUrl } from "@/lib/upload/cloudinary";
+import { getCloudinaryUrl } from "@/lib/image/cloudinary";
 
 function normalizeUrl(url: string) {
   if (!url.startsWith("http")) {
