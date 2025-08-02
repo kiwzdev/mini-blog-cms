@@ -28,9 +28,12 @@ model User {
 
   accounts Account[]
 
-  posts    Post[]
-  comments Comment[]
-  likes    Like[]
+  posts        Post[]
+  comments     Comment[]
+  postLikes    PostLike[]
+  commentLikes CommentLike[]
+  userLikes    UserLike[] // likes ที่ได้รับ
+  givenLikes   UserLike[]    @relation("UserGivenLikes") // likes ที่ให้
 
   passwordResetTokens PasswordResetToken[]
 
@@ -70,9 +73,9 @@ model Post {
   updatedAt   DateTime @updatedAt
 
   authorId String
-  author   User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  author   User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
   comments Comment[]
-  likes    Like[]
+  likes    PostLike[]
 
   @@map("posts")
 }
@@ -84,15 +87,18 @@ model Comment {
   updatedAt DateTime @updatedAt
 
   postId   String
-  post     Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  post     Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
   authorId String
-  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  author   User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  likes    CommentLike[]
 
   @@map("comments")
 }
 
-model Like {
-  id     String @id @default(cuid())
+model PostLike {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
   postId String
   userId String
 
@@ -100,7 +106,37 @@ model Like {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([postId, userId])
-  @@map("likes")
+  @@map("post_likes")
+}
+
+// Like สำหรับ Comment
+model CommentLike {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  commentId String
+  userId    String
+
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId])
+  @@map("comment_likes")
+}
+
+// Like สำหรับ User (follow/like user)
+model UserLike {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  likedUserId String // User ที่ถูก like
+  userId      String // User ที่ like
+
+  likedUser User @relation(fields: [likedUserId], references: [id], onDelete: Cascade)
+  user      User @relation("UserGivenLikes", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([likedUserId, userId])
+  @@map("user_likes")
 }
 
 model PasswordResetToken {

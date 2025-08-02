@@ -16,10 +16,12 @@ export const getPostComments = async (
 
 export const createPostComment = async (
   postId: string,
-  comment: string
+  content: string
 ): Promise<ApiResponse> => {
   try {
-    const { data } = await axios.post(`/api/posts/${postId}/comments`, comment);
+    const { data } = await axios.post(`/api/posts/${postId}/comments`, {
+      content,
+    });
     return data;
   } catch (error) {
     return handleApiError(error);
@@ -48,7 +50,7 @@ export const editPostComment = async (
   try {
     const { data } = await axios.put(
       `/api/posts/${postId}/comments/${commentId}`,
-      content
+      { content }
     );
     return data;
   } catch (error) {
@@ -82,10 +84,9 @@ export const createUserComment = async (
   }
 ): Promise<ApiResponse> => {
   try {
-    const { data } = await axios.post(
-      `/api/users/${userId}/comments`,
-      commentData
-    );
+    const { data } = await axios.post(`/api/users/${userId}/comments`, {
+      ...commentData,
+    });
     return data;
   } catch (error) {
     return handleApiError(error);
@@ -100,10 +101,9 @@ export const editUserComment = async (
   }
 ): Promise<ApiResponse> => {
   try {
-    const { data } = await axios.put(
-      `/api/users/${userId}/comments`,
-      commentData
-    );
+    const { data } = await axios.put(`/api/users/${userId}/comments`, {
+      ...commentData,
+    });
     return data;
   } catch (error) {
     return handleApiError(error);

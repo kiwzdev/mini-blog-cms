@@ -57,11 +57,15 @@ export interface IComment {
   id: string;
   content: string;
   createdAt: string;
+  isLiked: boolean;
   author: {
     id: string;
     name: string;
     profileImage: string | null;
     username: string;
+  };
+  _count?: {
+    likes: number;
   };
 }
 

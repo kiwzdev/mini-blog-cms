@@ -7,6 +7,7 @@ import {
 } from "@/api/comment";
 import { IComment } from "@/types/blog";
 import { useState, useCallback } from "react";
+import toast from "react-hot-toast";
 
 export interface UseCommentOptions {
   initialComments?: IComment[];
@@ -31,6 +32,7 @@ export function useComment(postId: string, options: UseCommentOptions = {}) {
 
       if (response.success) {
         setComments(response.data);
+        return true;
       } else {
         throw new Error(response.error?.message || "Failed to fetch comments");
       }
@@ -39,6 +41,7 @@ export function useComment(postId: string, options: UseCommentOptions = {}) {
         error instanceof Error ? error.message : "Error fetching comments";
       console.error("Error fetching comments:", error);
       options.onError?.(errorMessage);
+      return false;
     } finally {
       setIsLoading(false);
     }
@@ -56,6 +59,8 @@ export function useComment(postId: string, options: UseCommentOptions = {}) {
         // เพิ่มคอมเม้นต์ใหม่ที่ด้านบน
         setComments((prev) => [response.data, ...prev]);
         setNewComment("");
+        toast.success("Add comment successfully!");
+        return true;
       } else {
         throw new Error(response.error?.message || "Failed to add comment");
       }
@@ -64,6 +69,7 @@ export function useComment(postId: string, options: UseCommentOptions = {}) {
         error instanceof Error ? error.message : "Error adding comment";
       console.error("Error submitting comment:", error);
       options.onError?.(errorMessage);
+      return false;
     } finally {
       setIsSubmitting(false);
     }
@@ -79,6 +85,8 @@ export function useComment(postId: string, options: UseCommentOptions = {}) {
           setComments((prev) =>
             prev.filter((comment) => comment.id !== commentId)
           );
+          toast.success("Delete comment successfully!");
+          return true;
         } else {
           throw new Error(
             response.error?.message || "Failed to delete comment"
@@ -89,6 +97,7 @@ export function useComment(postId: string, options: UseCommentOptions = {}) {
           error instanceof Error ? error.message : "Error deleting comment";
         console.error("Error deleting comment:", error);
         options.onError?.(errorMessage);
+        return false;
       }
     },
     [postId, options]
@@ -112,6 +121,8 @@ export function useComment(postId: string, options: UseCommentOptions = {}) {
                 : comment
             )
           );
+        toast.success("Update comment successfully!");
+          return true;
         } else {
           throw new Error(
             response.error?.message || "Failed to update comment"
@@ -122,6 +133,7 @@ export function useComment(postId: string, options: UseCommentOptions = {}) {
           error instanceof Error ? error.message : "Error updating comment";
         console.error("Error updating comment:", error);
         options.onError?.(errorMessage);
+        return false;
       }
     },
     [postId, options]

@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import prisma from "@/lib/db";
-import { ICreateBlogInput } from "@/types/user";
+import { ICreateBlogInput } from "@/types/blog";
 import { createErrorResponse, createSuccessResponse } from "@/lib/api-response";
 
 // GET /api/posts - Get all posts with pagination and filters

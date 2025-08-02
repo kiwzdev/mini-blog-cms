@@ -38,7 +38,7 @@ export async function POST(
     }
 
     // Check if user already liked the post
-    const existingLike = await prisma.like.findUnique({
+    const existingLike = await prisma.postLike.findUnique({
       where: {
         postId_userId: {
           postId: postId,
@@ -49,7 +49,7 @@ export async function POST(
 
     if (existingLike) {
       // Unlike the post
-      await prisma.like.delete({
+      await prisma.postLike.delete({
         where: {
           id: existingLike.id,
         },
@@ -61,7 +61,7 @@ export async function POST(
       });
     } else {
       // Like the post
-      await prisma.like.create({
+      await prisma.postLike.create({
         data: {
           postId: postId,
           userId: session.user.id,

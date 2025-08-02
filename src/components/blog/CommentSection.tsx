@@ -7,14 +7,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { formatDate } from "@/lib/utils";
-import { MessageCircle, Send, Trash2, Edit2 } from "lucide-react";
+import { MessageCircle, Send, Trash2, Edit2, Shield } from "lucide-react";
 import { useComment } from "@/hooks/useComment";
 import { IComment } from "@/types/blog";
+import { useSession } from "next-auth/react";
+import { useConfirm } from "@/hooks/useConfirm";
 
 interface CommentSectionProps {
   postId: string;
+  postAuthorId: string; // เพิ่มเพื่อเช็คว่าเป็นเจ้าของโพสหรือไม่
   initialComments?: IComment[];
-  currentUserId?: string; // เพื่อแสดงปุ่ม edit/delete
   allowComments?: boolean; // เปิด/ปิดการคอมเม้นต์
   showCommentCount?: boolean;
   maxComments?: number; // จำกัดจำนวนคอมเม้นต์ที่แสดง
@@ -24,17 +26,20 @@ interface CommentSectionProps {
 
 export function CommentSection({
   postId,
+  postAuthorId,
   initialComments = [],
-  currentUserId,
   allowComments = true,
   showCommentCount = true,
   maxComments,
   onCommentAdded,
   onCommentDeleted,
 }: CommentSectionProps) {
+  const { data: session } = useSession();
   const [error, setError] = useState<string | null>(null);
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
+
+  const { confirmDelete } = useConfirm();
 
   const {
     comments,
@@ -52,25 +57,61 @@ export function CommentSection({
     onError: setError,
   });
 
-  // ดึงคอมเม้นต์เมื่อ component mount (ถ้าไม่มี initialComments)
   useEffect(() => {
-    if (initialComments.length === 0) {
-      fetchComments();
-    }
-  }, [fetchComments, initialComments.length]);
+    fetchComments();
+  }, []);
+
+  // Helper functions for permission checking
+  const canEditComment = (comment: IComment): boolean => {
+    if (!session?.user?.id) return false;
+    // เจ้าของคอมเม้นต์สามารถแก้ไขได้
+    return session.user.id === comment.author.id;
+  };
+
+  const canDeleteComment = (comment: IComment): boolean => {
+    if (!session?.user?.id) return false;
+    // เจ้าของคอมเม้นต์ หรือ เจ้าของโพสต์สามารถลบได้
+    return (
+      session.user.id === comment.author.id || session.user.id === postAuthorId
+    );
+  };
+
+  const isPostOwner = (comment: IComment): boolean => {
+    return (
+      session?.user?.id === postAuthorId &&
+      session.user.id !== comment.author.id
+    );
+  };
 
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    await submitComment();
-    if (comments.length > 0) {
+
+    const success = await submitComment();
+    if (success && comments.length > 0) {
       onCommentAdded?.(comments[0]);
     }
   };
 
-  const handleDeleteComment = async (commentId: string) => {
-    if (confirm("คุณแน่ใจว่าต้องการลบความคิดเห็นนี้?")) {
-      await deleteComment(commentId);
-      onCommentDeleted?.(commentId);
+  const handleDeleteComment = async (comment: IComment) => {
+    const isOwner = session?.user?.id === comment.author.id;
+    const isPostOwnerDeleting = session?.user?.id === postAuthorId;
+
+    let confirmMessage = "คุณแน่ใจว่าต้องการลบความคิดเห็นนี้?";
+
+    if (isPostOwnerDeleting && !isOwner) {
+      confirmMessage =
+        "คุณกำลังลบความคิดเห็นของผู้อื่นในฐานะเจ้าของโพสต์ คุณแน่ใจหรือไม่?";
+    }
+
+    const isConfirmed = await confirmDelete({
+      title: "ลบความคิดเห็น",
+      text: confirmMessage,
+    });
+    if (isConfirmed) {
+      const success = await deleteComment(comment.id);
+      if (success) {
+        onCommentDeleted?.(comment.id);
+      }
     }
   };
 
@@ -81,10 +122,17 @@ export function CommentSection({
 
   const handleUpdateComment = async () => {
     if (editingCommentId && editContent.trim()) {
-      await updateComment(editingCommentId, editContent);
-      setEditingCommentId(null);
-      setEditContent("");
+      const success = await updateComment(editingCommentId, editContent);
+      if (success) {
+        setEditingCommentId(null);
+        setEditContent("");
+      }
     }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingCommentId(null);
+    setEditContent("");
   };
 
   const displayComments = maxComments
@@ -104,22 +152,37 @@ export function CommentSection({
         {error && (
           <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
             {error}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setError(null)}
+              className="ml-2 h-auto p-0 text-red-700 hover:text-red-900"
+            >
+              ×
+            </Button>
           </div>
         )}
 
-        {/* IComment Form */}
+        {/* Comment Form */}
         {allowComments && (
           <form onSubmit={handleSubmitComment} className="space-y-4">
             <Textarea
-              placeholder="แสดงความคิดเห็น..."
+              placeholder={
+                session?.user?.id
+                  ? "แสดงความคิดเห็น..."
+                  : "เข้าสู่ระบบเพื่อแสดงความคิดเห็น"
+              }
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               className="min-h-[100px] resize-none"
+              disabled={!session?.user?.id}
             />
             <div className="flex justify-end">
               <Button
                 type="submit"
-                disabled={!newComment.trim() || isSubmitting}
+                disabled={
+                  !newComment.trim() || isSubmitting || !session?.user?.id
+                }
                 className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
               >
                 <Send className="w-4 h-4 mr-2" />
@@ -160,64 +223,82 @@ export function CommentSection({
                     <span className="text-xs text-slate-500">
                       @{comment.author.username}
                     </span>
+                    {/* แสดงไอคอนถ้าเป็นเจ้าของโพสต์ */}
+                    {comment.author.id === postAuthorId && (
+                      <Shield className="w-3 h-3 text-blue-500" />
+                    )}
                     <span className="text-xs text-slate-500">
                       {formatDate(new Date(comment.createdAt))}
                     </span>
                   </div>
 
-                  {/* Edit/Delete buttons for comment owner */}
-                  {currentUserId === comment.author.id && (
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEditComment(comment)}
-                        className="h-6 w-6 p-0"
-                      >
-                        <Edit2 className="w-3 h-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteComment(comment.id)}
-                        className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  )}
+                  {/* Edit/Delete buttons */}
+                  {session?.user?.id &&
+                    (canEditComment(comment) || canDeleteComment(comment)) && (
+                      <div className="flex items-center gap-1">
+                        {/* Edit button - เฉพาะเจ้าของคอมเม้นต์ */}
+                        {canEditComment(comment) && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditComment(comment)}
+                            className="h-6 w-6 p-0 text-slate-500 hover:text-blue-600"
+                            title="แก้ไขความคิดเห็น"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </Button>
+                        )}
+
+                        {/* Delete button - เจ้าของคอมเม้นต์ หรือ เจ้าของโพสต์ */}
+                        {canDeleteComment(comment) && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteComment(comment)}
+                            className="h-6 w-6 p-0 text-slate-500 hover:text-red-600"
+                            title={
+                              isPostOwner(comment)
+                                ? "ลบความคิดเห็น (เจ้าของโพสต์)"
+                                : "ลบความคิดเห็น"
+                            }
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                    )}
                 </div>
 
-                {/* IComment Content or Edit Form */}
+                {/* Comment Content or Edit Form */}
                 {editingCommentId === comment.id ? (
                   <div className="space-y-2">
                     <Textarea
                       value={editContent}
                       onChange={(e) => setEditContent(e.target.value)}
                       className="text-sm"
+                      placeholder="แก้ไขความคิดเห็น..."
                     />
                     <div className="flex gap-2">
                       <Button
                         size="sm"
                         onClick={handleUpdateComment}
-                        disabled={!editContent.trim()}
+                        disabled={!editContent.trim() || isSubmitting}
+                        className="bg-green-600 hover:bg-green-700 text-white"
                       >
-                        บันทึก
+                        {isSubmitting ? "กำลังบันทึก..." : "บันทึก"}
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => {
-                          setEditingCommentId(null);
-                          setEditContent("");
-                        }}
+                        onClick={handleCancelEdit}
+                        disabled={isSubmitting}
                       >
                         ยกเลิก
                       </Button>
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                  <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
                     {comment.content}
                   </p>
                 )}
@@ -232,6 +313,7 @@ export function CommentSection({
             <Button
               variant="outline"
               onClick={() => {
+                // Handle show more - ลบ maxComments หรือเพิ่มค่า
                 /* Handle show more */
               }}
             >
@@ -244,7 +326,11 @@ export function CommentSection({
         {comments.length === 0 && !isLoading && (
           <div className="text-center py-8 text-slate-500">
             <MessageCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p>ยังไม่มีความคิดเห็น เป็นคนแรกที่แสดงความคิดเห็นสิ!</p>
+            <p>
+              {session?.user?.id
+                ? "ยังไม่มีความคิดเห็น เป็นคนแรกที่แสดงความคิดเห็นสิ!"
+                : "ยังไม่มีความคิดเห็น เข้าสู่ระบบเพื่อแสดงความคิดเห็น"}
+            </p>
           </div>
         )}
       </CardContent>

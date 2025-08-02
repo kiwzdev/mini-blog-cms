@@ -141,7 +141,12 @@ export function BlogContent({ post }: { post: IBlog }) {
         </Card>
 
         {/* Comment Section */}
-        <CommentSection postId={post.id} />
+        <CommentSection
+          postId={post.id}
+          postAuthorId={post.author.id}
+          allowComments={true}
+          showCommentCount={true}
+        />
       </div>
     </div>
   );
