@@ -7,6 +7,7 @@ import { IBlogCard } from "@/types/blog";
 import { Clock, Heart, MessageCircle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { LikeButton } from "./LikeButton";
 
 function PostCard({ post }: { post: IBlogCard }) {
   const { isLiked, likeCount, isLiking, toggleLike } = useLike(
@@ -69,14 +70,13 @@ function PostCard({ post }: { post: IBlogCard }) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4 text-sm text-slate-500">
             <div className="flex items-center gap-1">
-              <button onClick={toggleLike} disabled={isLiking}>
-                {isLiked ? (
-                  <Heart color="red" className="w-4 h-4" />
-                ) : (
-                  <Heart className="w-4 h-4" />
-                )}
-              </button>
-              {likeCount || 0}
+              <LikeButton
+                likeCount={likeCount}
+                isLiked={isLiked}
+                isLiking={isLiking}
+                toggleLike={toggleLike}
+                size="sm"
+              />
             </div>
             <div className="flex items-center gap-1">
               <MessageCircle className="w-4 h-4" />

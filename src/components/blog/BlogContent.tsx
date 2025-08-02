@@ -3,7 +3,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { LikeButton } from "@/components/blog/like-button";
 import { CommentSection } from "@/components/blog/CommentSection";
 import { formatDate } from "@/lib/utils";
 import {
@@ -20,6 +19,7 @@ import { isOwner } from "@/lib/auth";
 import { getImageUrl } from "@/lib/image";
 import { useLike } from "@/hooks/useLike";
 import { useSession } from "next-auth/react";
+import { LikeButton } from "./LikeButton";
 
 export function BlogContent({ post }: { post: IBlog }) {
   const { data: session } = useSession();
@@ -28,7 +28,6 @@ export function BlogContent({ post }: { post: IBlog }) {
     post.isLiked,
     post._count?.likes || 0
   );
-
   return (
     <div className="min-h-screen py-8 px-4">
       <div className="max-w-4xl mx-auto">
@@ -111,14 +110,13 @@ export function BlogContent({ post }: { post: IBlog }) {
 
           {/* Actions */}
           <div className="flex items-center gap-4 mb-8">
-            <button onClick={toggleLike} disabled={isLiking}>
-              {isLiked ? (
-                <Heart className="w-6 h-6 text-red-500 hover:text-gray-500 cursor-pointer transition-colors duration-200" />
-              ) : (
-                <Heart className="w-6 h-6 text-gray-500 hover:text-red-500 cursor-pointer transition-colors duration-200" />
-              )}
-            </button>
-            {likeCount || 0}
+            <LikeButton
+              likeCount={likeCount}
+              isLiked={isLiked}
+              isLiking={isLiking}
+              toggleLike={toggleLike}
+              size="md"
+            />
             <Button variant="outline" size="sm">
               <Share2 className="w-4 h-4 mr-2" />
               แชร์
