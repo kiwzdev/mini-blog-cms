@@ -5,29 +5,22 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CommentSection } from "@/components/blog/CommentSection";
 import { formatDate } from "@/lib/utils";
-import {
-  ArrowLeft,
-  Clock,
-  User,
-  Eye,
-  Share2,
-  Edit3,
-  Heart,
-} from "lucide-react";
+import { ArrowLeft, Clock, Eye, Share2, Edit3 } from "lucide-react";
 import { IBlog } from "@/types/blog";
 import { isOwner } from "@/lib/auth";
 import { getImageUrl } from "@/lib/image";
-import { useLike } from "@/hooks/useLike";
+import { useLikePost } from "@/hooks/useLikePost";
 import { useSession } from "next-auth/react";
 import { LikeButton } from "./LikeButton";
 
 export function BlogContent({ post }: { post: IBlog }) {
   const { data: session } = useSession();
-  const { isLiked, likeCount, isLiking, toggleLike } = useLike(
+  const { isLiked, likeCount, isLiking, toggleLike } = useLikePost(
     post.id,
     post.isLiked,
     post._count?.likes || 0
   );
+
   return (
     <div className="min-h-screen py-8 px-4">
       <div className="max-w-4xl mx-auto">

@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import PostCard from "@/components/blog/BlogCard";
+import BlogCard from "@/components/blog/BlogCard";
 import PostCardSkeleton from "@/components/blog/BlogCardSkeleton";
 import MainNavbar from "@/components/layout/Navbar";
 import { formatDate } from "@/lib/utils";
@@ -256,7 +256,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                   <Suspense fallback={<PostCardSkeleton />}>
                     {userPosts.map((post) => (
-                      <PostCard key={post.id} post={post as IBlogCard} />
+                      <BlogCard key={post.id} post={post as IBlogCard} />
                     ))}
                   </Suspense>
                 </div>

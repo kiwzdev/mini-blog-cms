@@ -1,15 +1,14 @@
 // API Functions for Social Media App
-import { ICreateBlogInput, IUpdateBlogInput } from "@/types/user";
 import { ApiResponse } from "@/types/api";
 import axios from "axios";
 import { handleApiError } from "@/lib/api-response";
+import { ICreateBlogInput, IUpdateBlogInput } from "@/types/blog";
 
 // For Blog page
 export const getAllPosts = async (params?: {
   userId?: string;
   limit?: number;
   page?: number;
-  includeDetails?: boolean; // รวม likes/comments count + isLiked
 }): Promise<ApiResponse> => {
   try {
     const { data } = await axios.get("/api/posts", { params });

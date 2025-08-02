@@ -1,19 +1,19 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { useLike } from "@/hooks/useLike";
+import { useLikePost } from "@/hooks/useLikePost";
 import { getImageUrl } from "@/lib/image";
 import { formatDate } from "@/lib/utils";
 import { IBlogCard } from "@/types/blog";
-import { Clock, Heart, MessageCircle } from "lucide-react";
+import { Clock, MessageCircle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { LikeButton } from "./LikeButton";
 
-function PostCard({ post }: { post: IBlogCard }) {
-  const { isLiked, likeCount, isLiking, toggleLike } = useLike(
+function BlogCard({ post }: { post: IBlogCard }) {
+  const { isLiked, likeCount, isLiking, toggleLike } = useLikePost(
     post.id,
     post.isLiked,
-    post._count ? post._count.likes : 0
+    post._count?.likes || 0
   );
 
   return (
@@ -92,4 +92,4 @@ function PostCard({ post }: { post: IBlogCard }) {
   );
 }
 
-export default PostCard;
+export default BlogCard;

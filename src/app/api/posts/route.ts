@@ -14,7 +14,6 @@ export async function GET(request: NextRequest) {
     const userId = searchParams.get("userId");
     const limit = parseInt(searchParams.get("limit") || "10");
     const page = parseInt(searchParams.get("page") || "1");
-    const includeDetails = searchParams.get("includeDetails") === "true";
 
     const skip = (page - 1) * limit;
 
@@ -48,14 +47,12 @@ export async function GET(request: NextRequest) {
               },
             }
           : false,
-        ...(includeDetails && {
-          _count: {
-            select: {
-              comments: true,
-              likes: true,
-            },
+        _count: {
+          select: {
+            comments: true,
+            likes: true,
           },
-        }),
+        },
       },
     });
 

@@ -32,8 +32,8 @@ model User {
   comments     Comment[]
   postLikes    PostLike[]
   commentLikes CommentLike[]
-  userLikes    UserLike[] // likes ที่ได้รับ
-  givenLikes   UserLike[]    @relation("UserGivenLikes") // likes ที่ให้
+  following    Follow[] // คนที่เรา follow
+  followers    Follow[] @relation("UserFollowers") // คนที่ follow เรา
 
   passwordResetTokens PasswordResetToken[]
 
@@ -124,19 +124,19 @@ model CommentLike {
   @@map("comment_likes")
 }
 
-// Like สำหรับ User (follow/like user)
-model UserLike {
+// Follow for User
+model Follow {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
 
-  likedUserId String // User ที่ถูก like
-  userId      String // User ที่ like
+  followingId String // User ที่ถูก follow
+  followerId  String // User ที่ follow
 
-  likedUser User @relation(fields: [likedUserId], references: [id], onDelete: Cascade)
-  user      User @relation("UserGivenLikes", fields: [userId], references: [id], onDelete: Cascade)
+  following User @relation(fields: [followingId], references: [id], onDelete: Cascade)
+  follower  User @relation("UserFollowers", fields: [followerId], references: [id], onDelete: Cascade)
 
-  @@unique([likedUserId, userId])
-  @@map("user_likes")
+  @@unique([followingId, followerId])
+  @@map("follows")
 }
 
 model PasswordResetToken {

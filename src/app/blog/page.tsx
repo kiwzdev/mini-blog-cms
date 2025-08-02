@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import PostCardSkeleton from "@/components/blog/BlogCardSkeleton";
-import PostCard from "@/components/blog/BlogCard";
+import BlogCard from "@/components/blog/BlogCard";
 import MainNavbar from "@/components/layout/Navbar";
 import {
   Search,
@@ -400,7 +400,7 @@ export default function BlogPage() {
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                   <Suspense fallback={<PostCardSkeleton />}>
                     {sortedPosts.map((post) => (
-                      <PostCard key={post.id} post={post as IBlogCard} />
+                      <BlogCard key={post.id} post={post as IBlogCard} />
                     ))}
                   </Suspense>
                 </div>

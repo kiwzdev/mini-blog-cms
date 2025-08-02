@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import PostCard from "@/components/blog/BlogCard";
+import BlogCard from "@/components/blog/BlogCard";
 import PostCardSkeleton from "@/components/blog/BlogCardSkeleton";
 import MainNavbar from "@/components/layout/Navbar";
 import { ArrowLeft, FileText } from "lucide-react";
@@ -46,7 +46,7 @@ export default function UserPostsPage({ params }: UserPostsPageProps) {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             <Suspense fallback={<PostCardSkeleton />}>
               {userPosts.map((post) => (
-                <PostCard key={post.id} post={post as IBlog} />
+                <BlogCard key={post.id} post={post as IBlog} />
               ))}
             </Suspense>
           </div>

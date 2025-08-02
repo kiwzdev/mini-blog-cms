@@ -1,25 +1,24 @@
-// CommentSection Component ที่ใช้ useComment hook
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { formatDate } from "@/lib/utils";
-import { MessageCircle, Send, Trash2, Edit2, Shield } from "lucide-react";
+import { MessageCircle, Send } from "lucide-react";
 import { useComment } from "@/hooks/useComment";
+import { useLikeComment } from "@/hooks/useLikeComment";
 import { IComment } from "@/types/blog";
 import { useSession } from "next-auth/react";
 import { useConfirm } from "@/hooks/useConfirm";
+import { CommentItem } from "@/components/blog/CommentItem";
 
 interface CommentSectionProps {
   postId: string;
-  postAuthorId: string; // เพิ่มเพื่อเช็คว่าเป็นเจ้าของโพสหรือไม่
+  postAuthorId: string;
   initialComments?: IComment[];
-  allowComments?: boolean; // เปิด/ปิดการคอมเม้นต์
+  allowComments?: boolean;
   showCommentCount?: boolean;
-  maxComments?: number; // จำกัดจำนวนคอมเม้นต์ที่แสดง
+  maxComments?: number;
   onCommentAdded?: (comment: IComment) => void;
   onCommentDeleted?: (commentId: string) => void;
 }
@@ -35,6 +34,7 @@ export function CommentSection({
   onCommentDeleted,
 }: CommentSectionProps) {
   const { data: session } = useSession();
+
   const [error, setError] = useState<string | null>(null);
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
@@ -64,22 +64,13 @@ export function CommentSection({
   // Helper functions for permission checking
   const canEditComment = (comment: IComment): boolean => {
     if (!session?.user?.id) return false;
-    // เจ้าของคอมเม้นต์สามารถแก้ไขได้
     return session.user.id === comment.author.id;
   };
 
   const canDeleteComment = (comment: IComment): boolean => {
     if (!session?.user?.id) return false;
-    // เจ้าของคอมเม้นต์ หรือ เจ้าของโพสต์สามารถลบได้
     return (
       session.user.id === comment.author.id || session.user.id === postAuthorId
-    );
-  };
-
-  const isPostOwner = (comment: IComment): boolean => {
-    return (
-      session?.user?.id === postAuthorId &&
-      session.user.id !== comment.author.id
     );
   };
 
@@ -120,14 +111,13 @@ export function CommentSection({
     setEditContent(comment.content);
   };
 
-  const handleUpdateComment = async () => {
-    if (editingCommentId && editContent.trim()) {
-      const success = await updateComment(editingCommentId, editContent);
-      if (success) {
-        setEditingCommentId(null);
-        setEditContent("");
-      }
+  const handleUpdateComment = async (commentId: string, content: string) => {
+    const success = await updateComment(commentId, content);
+    if (success) {
+      setEditingCommentId(null);
+      setEditContent("");
     }
+    return success;
   };
 
   const handleCancelEdit = () => {
@@ -201,110 +191,46 @@ export function CommentSection({
 
         {/* Comments List */}
         <div className="space-y-4">
-          {displayComments.map((comment) => (
-            <div
-              key={comment.id}
-              className="flex gap-4 p-4 bg-white/30 dark:bg-black/20 rounded-lg backdrop-blur-sm"
-            >
-              <Image
-                src={comment.author.profileImage || "/default-avatar.png"}
-                alt={comment.author.name}
-                width={40}
-                height={40}
-                className="h-10 w-10 rounded-full flex-shrink-0"
-              />
+          {displayComments.map((comment) => {
+            // สร้าง useLikeComment สำหรับแต่ละ comment
+            const CommentWithLike = () => {
+              const {
+                isLiked,
+                likeCount,
+                isLiking,
+                toggleLike,
+              } = useLikeComment(
+                comment.id,
+                comment.isLiked || false, // ต้องเพิ่มใน IComment type
+                comment._count?.likes || 0    // ต้องเพิ่มใน IComment type
+              );
 
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-sm">
-                      {comment.author.name}
-                    </span>
-                    <span className="text-xs text-slate-500">
-                      @{comment.author.username}
-                    </span>
-                    {/* แสดงไอคอนถ้าเป็นเจ้าของโพสต์ */}
-                    {comment.author.id === postAuthorId && (
-                      <Shield className="w-3 h-3 text-blue-500" />
-                    )}
-                    <span className="text-xs text-slate-500">
-                      {formatDate(new Date(comment.createdAt))}
-                    </span>
-                  </div>
+              return (
+                <CommentItem
+                  key={comment.id}
+                  comment={comment}
+                  postAuthorId={postAuthorId}
+                  isSubmitting={isSubmitting}
+                  canEdit={canEditComment(comment)}
+                  canDelete={canDeleteComment(comment)}
+                  onEdit={handleEditComment}
+                  onDelete={handleDeleteComment}
+                  onUpdate={handleUpdateComment}
+                  onCancelEdit={handleCancelEdit}
+                  editingCommentId={editingCommentId}
+                  editContent={editContent}
+                  setEditContent={setEditContent}
+                  // Like props
+                  isLiked={isLiked}
+                  likeCount={likeCount}
+                  isLiking={isLiking}
+                  onToggleLike={toggleLike}
+                />
+              );
+            };
 
-                  {/* Edit/Delete buttons */}
-                  {session?.user?.id &&
-                    (canEditComment(comment) || canDeleteComment(comment)) && (
-                      <div className="flex items-center gap-1">
-                        {/* Edit button - เฉพาะเจ้าของคอมเม้นต์ */}
-                        {canEditComment(comment) && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditComment(comment)}
-                            className="h-6 w-6 p-0 text-slate-500 hover:text-blue-600"
-                            title="แก้ไขความคิดเห็น"
-                          >
-                            <Edit2 className="w-3 h-3" />
-                          </Button>
-                        )}
-
-                        {/* Delete button - เจ้าของคอมเม้นต์ หรือ เจ้าของโพสต์ */}
-                        {canDeleteComment(comment) && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteComment(comment)}
-                            className="h-6 w-6 p-0 text-slate-500 hover:text-red-600"
-                            title={
-                              isPostOwner(comment)
-                                ? "ลบความคิดเห็น (เจ้าของโพสต์)"
-                                : "ลบความคิดเห็น"
-                            }
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                </div>
-
-                {/* Comment Content or Edit Form */}
-                {editingCommentId === comment.id ? (
-                  <div className="space-y-2">
-                    <Textarea
-                      value={editContent}
-                      onChange={(e) => setEditContent(e.target.value)}
-                      className="text-sm"
-                      placeholder="แก้ไขความคิดเห็น..."
-                    />
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        onClick={handleUpdateComment}
-                        disabled={!editContent.trim() || isSubmitting}
-                        className="bg-green-600 hover:bg-green-700 text-white"
-                      >
-                        {isSubmitting ? "กำลังบันทึก..." : "บันทึก"}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={handleCancelEdit}
-                        disabled={isSubmitting}
-                      >
-                        ยกเลิก
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
-                    {comment.content}
-                  </p>
-                )}
-              </div>
-            </div>
-          ))}
+            return <CommentWithLike key={comment.id} />;
+          })}
         </div>
 
         {/* Show More Button */}

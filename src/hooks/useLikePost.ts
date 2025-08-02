@@ -1,7 +1,7 @@
-import { likePost } from "@/api/like";
+import { toggleLikePost } from "@/api/like";
 import { useState } from "react";
 
-export function useLike(
+export function useLikePost(
   postId: string,
   initialLiked: boolean,
   initialCount: number
@@ -16,7 +16,7 @@ export function useLike(
     setisLiking(true);
 
     try {
-      const response = await likePost(postId);
+      const response = await toggleLikePost(postId);
 
       if (response.success) {
         setIsLiked(response.data.liked);
