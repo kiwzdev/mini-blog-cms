@@ -1,9 +1,9 @@
 // hooks/useComment.ts
 import {
-  createPostComment,
-  deletePostComment,
-  editPostComment,
-  getPostComments,
+  createBlogComment,
+  deleteBlogComment,
+  editBlogComment,
+  getBlogComments,
 } from "@/api/comment";
 import { IComment } from "@/types/blog";
 import { useState, useCallback } from "react";
@@ -14,7 +14,7 @@ export interface UseCommentOptions {
   onError?: (error: string) => void;
 }
 
-export function useComment(postId: string, options: UseCommentOptions = {}) {
+export function useComment(blogId: string, options: UseCommentOptions = {}) {
   const [comments, setComments] = useState<IComment[]>(
     options.initialComments || []
   );
@@ -24,11 +24,11 @@ export function useComment(postId: string, options: UseCommentOptions = {}) {
 
   // ดึงคอมเม้นต์ทั้งหมด
   const fetchComments = useCallback(async () => {
-    if (!postId) return;
+    if (!blogId) return;
 
     setIsLoading(true);
     try {
-      const response = await getPostComments(postId);
+      const response = await getBlogComments(blogId);
 
       if (response.success) {
         setComments(response.data);
@@ -45,15 +45,15 @@ export function useComment(postId: string, options: UseCommentOptions = {}) {
     } finally {
       setIsLoading(false);
     }
-  }, [postId, options]);
+  }, [blogId, options]);
 
   // เพิ่มคอมเม้นต์ใหม่
   const submitComment = useCallback(async () => {
-    if (!newComment.trim() || isSubmitting || !postId) return;
+    if (!newComment.trim() || isSubmitting || !blogId) return;
 
     setIsSubmitting(true);
     try {
-      const response = await createPostComment(postId, newComment);
+      const response = await createBlogComment(blogId, newComment);
 
       if (response.success) {
         // เพิ่มคอมเม้นต์ใหม่ที่ด้านบน
@@ -73,13 +73,13 @@ export function useComment(postId: string, options: UseCommentOptions = {}) {
     } finally {
       setIsSubmitting(false);
     }
-  }, [newComment, isSubmitting, postId, options]);
+  }, [newComment, isSubmitting, blogId, options]);
 
   // ลบคอมเม้นต์
   const deleteComment = useCallback(
     async (commentId: string) => {
       try {
-        const response = await deletePostComment(postId, commentId);
+        const response = await deleteBlogComment(blogId, commentId);
 
         if (response.success) {
           setComments((prev) =>
@@ -100,14 +100,14 @@ export function useComment(postId: string, options: UseCommentOptions = {}) {
         return false;
       }
     },
-    [postId, options]
+    [blogId, options]
   );
 
   // อัพเดตคอมเม้นต์
   const updateComment = useCallback(
     async (commentId: string, content: string) => {
       try {
-        const response = await editPostComment(postId, commentId, content);
+        const response = await editBlogComment(blogId, commentId, content);
 
         if (response.success) {
           setComments((prev) =>
@@ -136,7 +136,7 @@ export function useComment(postId: string, options: UseCommentOptions = {}) {
         return false;
       }
     },
-    [postId, options]
+    [blogId, options]
   );
 
   return {

@@ -1,0 +1,15 @@
+-- AlterTable
+ALTER TABLE "users" ADD COLUMN     "badge" TEXT,
+ADD COLUMN     "bio" TEXT,
+ADD COLUMN     "birthDate" TIMESTAMP(3),
+ADD COLUMN     "company" TEXT,
+ADD COLUMN     "education" TEXT,
+ADD COLUMN     "isVerified" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "jobTitle" TEXT,
+ADD COLUMN     "lastActiveAt" TIMESTAMP(3),
+ADD COLUMN     "location" TEXT,
+ADD COLUMN     "phone" TEXT,
+ADD COLUMN     "settings" JSONB,
+ADD COLUMN     "socialLinks" JSONB,
+ADD COLUMN     "status" TEXT NOT NULL DEFAULT 'active',
+ADD COLUMN     "website" TEXT;

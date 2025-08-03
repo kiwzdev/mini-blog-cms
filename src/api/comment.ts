@@ -2,24 +2,24 @@ import { handleApiError } from "@/lib/api-response";
 import { ApiResponse } from "@/types/api";
 import axios from "axios";
 
-// Post Comments
-export const getPostComments = async (
-  postId: string,
+// Blog Comments
+export const getBlogComments = async (
+  blogId: string,
   params?: {
     limit?: number;
     page?: number;
   }
 ): Promise<ApiResponse> => {
-  const { data } = await axios.get(`/api/posts/${postId}/comments`, { params });
+  const { data } = await axios.get(`/api/blogs/${blogId}/comments`, { params });
   return data;
 };
 
-export const createPostComment = async (
-  postId: string,
+export const createBlogComment = async (
+  blogId: string,
   content: string
 ): Promise<ApiResponse> => {
   try {
-    const { data } = await axios.post(`/api/posts/${postId}/comments`, {
+    const { data } = await axios.post(`/api/blogs/${blogId}/comments`, {
       content,
     });
     return data;
@@ -28,13 +28,13 @@ export const createPostComment = async (
   }
 };
 
-export const deletePostComment = async (
-  postId: string,
+export const deleteBlogComment = async (
+  blogId: string,
   commentId: string
 ): Promise<ApiResponse> => {
   try {
     const { data } = await axios.delete(
-      `/api/posts/${postId}/comments/${commentId}`
+      `/api/blogs/${blogId}/comments/${commentId}`
     );
     return data;
   } catch (error) {
@@ -42,14 +42,14 @@ export const deletePostComment = async (
   }
 };
 
-export const editPostComment = async (
-  postId: string,
+export const editBlogComment = async (
+  blogId: string,
   commentId: string,
   content: string
 ): Promise<ApiResponse> => {
   try {
     const { data } = await axios.put(
-      `/api/posts/${postId}/comments/${commentId}`,
+      `/api/blogs/${blogId}/comments/${commentId}`,
       { content }
     );
     return data;

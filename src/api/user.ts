@@ -3,9 +3,9 @@ import axios from "axios";
 import { handleApiError } from "@/lib/api-response";
 
 // For User profile page
-export const getUserPosts = async (userId: string): Promise<ApiResponse> => {
+export const getUserBlogs = async (userId: string): Promise<ApiResponse> => {
   try {
-    const { data } = await axios.get(`/api/users/${userId}/posts`, {
+    const { data } = await axios.get(`/api/users/${userId}/blogs`, {
       params: { userId },
     });
     return data;
@@ -18,7 +18,7 @@ export const getUserPosts = async (userId: string): Promise<ApiResponse> => {
 export const getUserProfile = async (userId: string): Promise<ApiResponse> => {
   try {
     const { data } = await axios.get(`/api/users/${userId}/profile`);
-    return data; // รวม user info + stats + recent posts
+    return data; // รวม user info + stats + recent blogs
   } catch (error) {
     return handleApiError(error);
   }

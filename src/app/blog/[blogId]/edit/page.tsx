@@ -20,8 +20,8 @@ import Link from "next/link";
 import MainNavbar from "@/components/layout/Navbar";
 import Image from "next/image";
 import toast from "react-hot-toast";
-import { updatePost, getPostById, deletePost } from "@/api/post";
-import { generateExcerpt, generateSlug } from "@/helpers/post";
+import { updateBlog, getBlogById, deleteBlog } from "@/api/blog";
+import { generateExcerpt, generateSlug } from "@/helpers/blog";
 import {
   Select,
   SelectContent,
@@ -40,7 +40,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { updatePostSchema } from "@/lib/validations/postSchema";
+import { updateBlogSchema } from "@/lib/validations/blogSchema";
 import { BLOG_CATEGORIES } from "@/lib/config";
 import { IBlog } from "@/types/blog";
 import { isValidHttpUrl } from "@/lib/image";
@@ -50,7 +50,7 @@ import { useLoading } from "@/stores/useLoadingStore";
 
 const categories = BLOG_CATEGORIES;
 
-export default function EditPostPage() {
+export default function EditBlogPage() {
   const params = useParams<{ blogId: string }>();
   const blogId = params.blogId;
 
@@ -66,17 +66,17 @@ export default function EditPostPage() {
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [isPublished, setIsPublished] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const { isLoading, setLoading } = useLoading(`blog-post-${blogId}`);
+  const { isLoading, setLoading } = useLoading(`blog-blog-${blogId}`);
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [post, setPost] = useState<IBlog | null>(null);
+  const [blog, setBlog] = useState<IBlog | null>(null);
 
-  // Load existing post data
+  // Load existing blog data
   useEffect(() => {
-    const fetchPost = async () => {
+    const fetchBlog = async () => {
       try {
         setLoading(true);
-        const response = await getPostById(blogId);
+        const response = await getBlogById(blogId);
         console.log(response);
 
         if (response.success) {
@@ -86,24 +86,24 @@ export default function EditPostPage() {
           setCategory(response.data.category || "");
           setCoverImage(response.data.coverImage || "");
           setIsPublished(response.data.published || false);
-          setPost(response.data);
+          setBlog(response.data);
         } else if (response.error) {
           throw new Error(response.error.message);
         }
       } catch (err: unknown) {
         const errorMessage =
           err instanceof Error ? err.message : "Something went wrong";
-        console.error("Error fetching post:", errorMessage);
+        console.error("Error fetching blog:", errorMessage);
         setError(errorMessage);
         toast.error(errorMessage);
-        router.push("/dashboard/posts");
+        router.push("/dashboard/blogs");
       } finally {
         setLoading(false);
       }
     };
 
     if (blogId) {
-      fetchPost();
+      fetchBlog();
     }
   }, [blogId, router]);
 
@@ -111,8 +111,8 @@ export default function EditPostPage() {
     setIsSaving(true);
 
     try {
-      // Update post data
-      const updatedPost = {
+      // Update blog data
+      const updatedBlog = {
         title,
         category,
         content,
@@ -124,9 +124,9 @@ export default function EditPostPage() {
       };
 
       // Validation with Zod
-      const validation = updatePostSchema.safeParse(updatedPost);
+      const validation = updateBlogSchema.safeParse(updatedBlog);
       if (!validation.success) {
-        console.log("Error updating post:", validation.error.message);
+        console.log("Error updating blog:", validation.error.message);
         throw new Error(validation.error.message);
       }
 
@@ -135,14 +135,14 @@ export default function EditPostPage() {
         const uploadResponse = await uploadImage(coverImageFile, coverImage);
         if (uploadResponse.success) {
           toast.success("อัปโหลดรูปภาพสําเร็จ!");
-          updatedPost.coverImage = uploadResponse.data.publicId;
+          updatedBlog.coverImage = uploadResponse.data.publicId;
         } else if (uploadResponse.error) {
           throw new Error(uploadResponse.error.message);
         }
       }
 
-      // Update the post
-      const updateResponse = await updatePost(blogId, updatedPost);
+      // Update the blog
+      const updateResponse = await updateBlog(blogId, updatedBlog);
 
       if (updateResponse.success) {
         if (publish) {
@@ -155,7 +155,7 @@ export default function EditPostPage() {
         setError(updateResponse.error.code);
       }
     } catch (error) {
-      console.error("Error updating post:", error);
+      console.error("Error updating blog:", error);
       toast.error("เกิดข้อผิดพลาดในการอัปเดตโพสต์");
     } finally {
       setIsSaving(false);
@@ -166,11 +166,11 @@ export default function EditPostPage() {
     setIsDeleting(true);
 
     try {
-      await deletePost(blogId);
+      await deleteBlog(blogId);
       toast.success("ลบโพสต์สำเร็จ!");
-      router.push("/dashboard/posts");
+      router.push("/dashboard/blogs");
     } catch (error) {
-      console.error("Error deleting post:", error);
+      console.error("Error deleting blog:", error);
       toast.error("เกิดข้อผิดพลาดในการลบโพสต์");
     } finally {
       setIsDeleting(false);
@@ -213,8 +213,8 @@ export default function EditPostPage() {
   };
 
   if (isLoading) return <Loading />;
-  if (!post && !error) return <Loading />;
-  if (error === "Post not found" || !post) return notFound();
+  if (!blog && !error) return <Loading />;
+  if (error === "Blog not found" || !blog) return notFound();
   else
     return (
       <>
@@ -225,7 +225,7 @@ export default function EditPostPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <Button asChild variant="ghost">
-                  <Link href={`/blog/${post?.id}`}>
+                  <Link href={`/blog/${blog?.id}`}>
                     <ArrowLeft className="w-4 h-4 mr-2" />
                     กลับ
                   </Link>
@@ -234,8 +234,8 @@ export default function EditPostPage() {
                   <h1 className="text-2xl font-bold">แก้ไขบล็อก</h1>
                   <p className="text-sm text-gray-600 mt-1">
                     แก้ไขล่าสุด:{" "}
-                    {post?.updatedAt
-                      ? new Date(post.updatedAt).toLocaleDateString("th-TH")
+                    {blog?.updatedAt
+                      ? new Date(blog.updatedAt).toLocaleDateString("th-TH")
                       : "ไม่ระบุ"}
                   </p>
                 </div>
@@ -369,10 +369,10 @@ export default function EditPostPage() {
                         {isPublished ? "เผยแพร่แล้ว" : "แบบร่าง"}
                       </span>
                     </div>
-                    {post?.createdAt && (
+                    {blog?.createdAt && (
                       <p className="text-xs text-gray-600 mt-1">
                         เผยแพร่เมื่อ:{" "}
-                        {new Date(post.createdAt).toLocaleDateString("th-TH")}
+                        {new Date(blog.createdAt).toLocaleDateString("th-TH")}
                       </p>
                     )}
                   </CardContent>

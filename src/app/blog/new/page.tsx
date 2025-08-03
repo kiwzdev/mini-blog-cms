@@ -13,8 +13,8 @@ import Link from "next/link";
 import MainNavbar from "@/components/layout/Navbar";
 import Image from "next/image";
 import toast from "react-hot-toast";
-import { createPost } from "@/api/post";
-import { generateExcerpt, generateSlug } from "@/helpers/post";
+import { createBlog } from "@/api/blog";
+import { generateExcerpt, generateSlug } from "@/helpers/blog";
 import {
   Select,
   SelectContent,
@@ -22,13 +22,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { createPostSchema } from "@/lib/validations/postSchema";
+import { createBlogSchema } from "@/lib/validations/blogSchema";
 import { isValidHttpUrl } from "@/lib/image";
 import Loading from "@/components/layout/Loading";
 import { BLOG_CATEGORIES } from "@/lib/config";
 import { uploadImage } from "@/api/upload";
 
-export default function NewPostPage() {
+export default function NewBlogPage() {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -45,8 +45,8 @@ export default function NewPostPage() {
     setIsSaving(true);
 
     try {
-      // Created post data
-      const createdPost = {
+      // Created blog data
+      const createdBlog = {
         title,
         category,
         content,
@@ -58,7 +58,7 @@ export default function NewPostPage() {
       };
 
       // Validation with Zod
-      const validation = createPostSchema.safeParse(createdPost);
+      const validation = createBlogSchema.safeParse(createdBlog);
       if (!validation.success) {
         throw new Error(validation.error.message);
       }
@@ -69,11 +69,11 @@ export default function NewPostPage() {
         if (!uploadResult.success) {
           throw new Error("Failed to upload cover image");
         }
-        createdPost.coverImage = uploadResult.data.publicId;
+        createdBlog.coverImage = uploadResult.data.publicId;
       }
 
-      // Create the post
-      const response = await createPost(createdPost);
+      // Create the blog
+      const response = await createBlog(createdBlog);
 
       if (response.success) {
         if (publish) {

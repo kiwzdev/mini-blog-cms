@@ -5,32 +5,32 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { IComment } from "@/types/blog";
 
-type ParamsType = Promise<{ postId: string }>;
+type ParamsType = Promise<{ blogId: string }>;
 
-// GET /api/posts/{postId}/comments - Get all comments for a post
+// GET /api/blogs/{blogId}/comments - Get all comments for a blog
 export async function GET(
   request: NextRequest,
   { params }: { params: ParamsType }
 ) {
   try {
     const session = await getServerSession(authOptions);
-    const { postId } = await params;
+    const { blogId } = await params;
 
-    // Check if post exists
-    const post = await prisma.post.findUnique({
-      where: { id: postId },
+    // Check if blog exists
+    const blog = await prisma.blog.findUnique({
+      where: { id: blogId },
     });
 
-    if (!post) {
+    if (!blog) {
       return createErrorResponse({
-        code: "POST_NOT_FOUND",
-        message: "Post not found",
+        code: "BLOG_NOT_FOUND",
+        message: "Blog not found",
         status: 404,
       });
     }
 
     const comments = await prisma.comment.findMany({
-      where: { postId },
+      where: { blogId },
       include: {
         author: {
           select: {
@@ -91,7 +91,7 @@ export async function GET(
   }
 }
 
-// POST /api/posts/{postId}/comments - Create a new comment
+// POST /api/blogs/{blogId}/comments - Create a new comment
 export async function POST(
   request: NextRequest,
   { params }: { params: ParamsType }
@@ -107,7 +107,7 @@ export async function POST(
       });
     }
 
-    const { postId } = await params;
+    const { blogId } = await params;
     const body = await request.json();
     const { content } = body;
     console.log(`content: ${content}`);
@@ -128,15 +128,15 @@ export async function POST(
       });
     }
 
-    // Check if post exists
-    const post = await prisma.post.findUnique({
-      where: { id: postId },
+    // Check if blog exists
+    const blog = await prisma.blog.findUnique({
+      where: { id: blogId },
     });
 
-    if (!post) {
+    if (!blog) {
       return createErrorResponse({
-        code: "POST_NOT_FOUND",
-        message: "Post not found",
+        code: "BLOG_NOT_FOUND",
+        message: "Blog not found",
         status: 404,
       });
     }
@@ -145,7 +145,7 @@ export async function POST(
     const comment = await prisma.comment.create({
       data: {
         content: content.trim(),
-        postId: postId,
+        blogId: blogId,
         authorId: session.user.id,
       },
       include: {

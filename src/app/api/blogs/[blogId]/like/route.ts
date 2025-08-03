@@ -4,9 +4,9 @@ import prisma from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 
-type ParamsType = Promise<{ postId: string }>;
+type ParamsType = Promise<{ blogId: string }>;
 
-// POST /api/posts/[postId]/like - Toggle like on post
+// POST /api/blogs/[blogId]/like - Toggle like on blog
 export async function POST(
   request: NextRequest,
   { params }: { params: ParamsType }
@@ -17,39 +17,39 @@ export async function POST(
     if (!session?.user?.id) {
       return createErrorResponse({
         code: "UNAUTHORIZED",
-        message: "You must be logged in to like posts",
+        message: "You must be logged in to like blogs",
         status: 401,
       });
     }
 
-    const { postId } = await params;
+    const { blogId } = await params;
 
-    // Check if post exists
-    const post = await prisma.post.findUnique({
-      where: { id: postId },
+    // Check if blog exists
+    const blog = await prisma.blog.findUnique({
+      where: { id: blogId },
     });
 
-    if (!post) {
+    if (!blog) {
       return createErrorResponse({
-        code: "POST_NOT_FOUND",
-        message: "Post not found",
+        code: "BLOG_NOT_FOUND",
+        message: "Blog not found",
         status: 404,
       });
     }
 
-    // Check if user already liked the post
-    const existingLike = await prisma.postLike.findUnique({
+    // Check if user already liked the blog
+    const existingLike = await prisma.blogLike.findUnique({
       where: {
-        postId_userId: {
-          postId: postId,
+        blogId_userId: {
+          blogId: blogId,
           userId: session.user.id,
         },
       },
     });
 
     if (existingLike) {
-      // Unlike the post
-      await prisma.postLike.delete({
+      // Unlike the blog
+      await prisma.blogLike.delete({
         where: {
           id: existingLike.id,
         },
@@ -57,20 +57,20 @@ export async function POST(
 
       return createSuccessResponse({
         data: { liked: false },
-        message: "Post unliked successfully",
+        message: "Blog unliked successfully",
       });
     } else {
-      // Like the post
-      await prisma.postLike.create({
+      // Like the blog
+      await prisma.blogLike.create({
         data: {
-          postId: postId,
+          blogId: blogId,
           userId: session.user.id,
         },
       });
 
       return createSuccessResponse({
         data: { liked: true },
-        message: "Post liked successfully",
+        message: "Blog liked successfully",
       });
     }
   } catch (error) {

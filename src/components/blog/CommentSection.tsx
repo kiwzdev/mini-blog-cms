@@ -13,8 +13,8 @@ import { useConfirm } from "@/hooks/useConfirm";
 import { CommentItem } from "@/components/blog/CommentItem";
 
 interface CommentSectionProps {
-  postId: string;
-  postAuthorId: string;
+  blogId: string;
+  blogAuthorId: string;
   initialComments?: IComment[];
   allowComments?: boolean;
   showCommentCount?: boolean;
@@ -24,8 +24,8 @@ interface CommentSectionProps {
 }
 
 export function CommentSection({
-  postId,
-  postAuthorId,
+  blogId,
+  blogAuthorId,
   initialComments = [],
   allowComments = true,
   showCommentCount = true,
@@ -52,7 +52,7 @@ export function CommentSection({
     fetchComments,
     deleteComment,
     updateComment,
-  } = useComment(postId, {
+  } = useComment(blogId, {
     initialComments,
     onError: setError,
   });
@@ -70,7 +70,7 @@ export function CommentSection({
   const canDeleteComment = (comment: IComment): boolean => {
     if (!session?.user?.id) return false;
     return (
-      session.user.id === comment.author.id || session.user.id === postAuthorId
+      session.user.id === comment.author.id || session.user.id === blogAuthorId
     );
   };
 
@@ -85,11 +85,11 @@ export function CommentSection({
 
   const handleDeleteComment = async (comment: IComment) => {
     const isOwner = session?.user?.id === comment.author.id;
-    const isPostOwnerDeleting = session?.user?.id === postAuthorId;
+    const isBlogOwnerDeleting = session?.user?.id === blogAuthorId;
 
     let confirmMessage = "คุณแน่ใจว่าต้องการลบความคิดเห็นนี้?";
 
-    if (isPostOwnerDeleting && !isOwner) {
+    if (isBlogOwnerDeleting && !isOwner) {
       confirmMessage =
         "คุณกำลังลบความคิดเห็นของผู้อื่นในฐานะเจ้าของโพสต์ คุณแน่ใจหรือไม่?";
     }
@@ -209,7 +209,7 @@ export function CommentSection({
                 <CommentItem
                   key={comment.id}
                   comment={comment}
-                  postAuthorId={postAuthorId}
+                  blogAuthorId={blogAuthorId}
                   isSubmitting={isSubmitting}
                   canEdit={canEditComment(comment)}
                   canDelete={canDeleteComment(comment)}

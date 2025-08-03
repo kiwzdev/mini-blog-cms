@@ -211,8 +211,8 @@ export const EDITOR_CONFIG = {
   },
 };
 
-// lib/config/post.ts
-export const POST_CONFIG = {
+// lib/config/blog.ts
+export const BLOG_CONFIG = {
   excerptLength: 150,
   slugMaxLength: 100,
   titleMaxLength: 200,
@@ -254,7 +254,7 @@ export const API_CONFIG = {
   timeout: 10000,
   retries: 3,
   endpoints: {
-    posts: "/posts",
+    blogs: "/blogs",
     categories: "/categories",
     users: "/users",
     auth: "/auth",
@@ -278,7 +278,7 @@ export const SEO_CONFIG = {
 
 // lib/config/validation.ts
 export const VALIDATION_CONFIG = {
-  post: {
+  blog: {
     title: {
       minLength: 5,
       maxLength: 200,

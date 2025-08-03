@@ -5,7 +5,7 @@ import prisma from "@/lib/db";
 import { ICreateBlogInput } from "@/types/blog";
 import { createErrorResponse, createSuccessResponse } from "@/lib/api-response";
 
-// GET /api/posts - Get all posts with pagination and filters
+// GET /api/blogs - Get all blogs with pagination and filters
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
       ...(userId && { authorId: userId }),
     };
 
-    const posts = await prisma.post.findMany({
+    const blogs = await prisma.blog.findMany({
       where: whereClause,
       skip,
       take: limit,
@@ -56,18 +56,18 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // เพิ่ม isLiked ให้กับแต่ละ post
-    const postsWithLikeStatus = posts.map((post) => ({
-      ...post,
-      isLiked: session?.user?.id ? post.likes.length > 0 : false,
+    // เพิ่ม isLiked ให้กับแต่ละ blog
+    const blogsWithLikeStatus = blogs.map((blog) => ({
+      ...blog,
+      isLiked: session?.user?.id ? blog.likes.length > 0 : false,
       likes: undefined, // ลบ likes array ออกเพื่อไม่ให้ response ใหญ่เกินไป
     }));
 
-    const total = await prisma.post.count({ where: whereClause });
+    const total = await prisma.blog.count({ where: whereClause });
 
     return createSuccessResponse({
       data: {
-        posts: postsWithLikeStatus,
+        blogs: blogsWithLikeStatus,
         pagination: {
           page,
           limit,
@@ -75,25 +75,25 @@ export async function GET(request: NextRequest) {
           pages: Math.ceil(total / limit),
         },
       },
-      message: "Posts fetched successfully",
+      message: "Blogs fetched successfully",
     });
   } catch (error) {
-    console.error("Error fetching posts:", error);
+    console.error("Error fetching blogs:", error);
     return createErrorResponse({
-      code: "FETCH_POSTS_ERROR",
-      message: "Failed to fetch posts",
+      code: "FETCH_BLOGS_ERROR",
+      message: "Failed to fetch blogs",
     });
   }
 }
 
-// POST /api/posts - Create new post
+// POST /api/blogs - Create new blog
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) {
       return createErrorResponse({
         code: "UNAUTHORIZED",
-        message: "You must be logged in to create a post",
+        message: "You must be logged in to create a blog",
         status: 401,
       });
     }
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
       category,
     } = body;
 
-    const post = await prisma.post.create({
+    const blog = await prisma.blog.create({
       data: {
         title,
         slug,
@@ -141,14 +141,14 @@ export async function POST(request: NextRequest) {
     });
 
     return createSuccessResponse({
-      data: post,
-      message: "Post created successfully",
+      data: blog,
+      message: "Blog created successfully",
     });
   } catch (error) {
-    console.error("Error creating post:", error);
+    console.error("Error creating blog:", error);
     return createErrorResponse({
-      code: "CREATE_POST_ERROR",
-      message: "Failed to create post",
+      code: "CREATE_BLOG_ERROR",
+      message: "Failed to create blog",
     });
   }
 }

@@ -26,7 +26,7 @@ const navItems = [
   },
   {
     title: "โพสต์",
-    href: "/dashboard/posts",
+    href: "/dashboard/blogs",
     icon: FileText,
   },
   {

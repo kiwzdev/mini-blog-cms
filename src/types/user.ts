@@ -20,22 +20,66 @@ export interface IUserProfile {
     twitter?: string;
     github?: string;
     website?: string;
+    instagram?: string;
+    facebook?: string;
+    youtube?: string;
+    linkedin?: string;
+    tiktok?: string;
   };
+  location?: string;
   createdAt: Date;
+  lastActiveAt?: Date;
+
+  // Professional info
+  jobTitle?: string;
+  company?: string;
+  education?: string;
+
+  // Verification & status
+  status?: IUserStatus;
+  badge?: IUserBadge;
 
   // Private fields (เฉพาะเจ้าของ)
   email?: string;
   phone?: string;
-  settings?: {
-    profileVisibility: "public" | "private";
-    showEmail: boolean;
-    allowComments: boolean;
-  };
+  birthDate?: Date;
+  settings?: IUserSettings;
 
   // Stats
-  _count: {
-    posts: number;
-    followers?: number;
-    following?: number;
-  };
+  _count: IUserCount;
+}
+
+export interface IUserSocialLinks {
+  twitter?: string;
+  github?: string;
+  website?: string;
+  instagram?: string;
+  facebook?: string;
+  youtube?: string;
+  linkedin?: string;
+  tiktok?: string;
+}
+
+export interface IUserStatus {
+  status?: "active" | "inactive" | "banned";
+}
+
+export interface IUserBadge {
+  badge?: "creator" | "pro" | "premium" | null;
+}
+
+export interface IUserSettings {
+  profileVisibility?: "public" | "private";
+  showEmail?: boolean;
+  showPhone?: boolean;
+  allowComments?: boolean;
+}
+
+export interface IUserCount {
+  blogs: number;
+  followers: number;
+  following: number;
+  blogLikes: number;
+  views: number;
+  comments: number;
 }

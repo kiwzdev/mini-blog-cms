@@ -9,7 +9,7 @@ import { LikeButton } from "./LikeButton";
 
 interface CommentItemProps {
   comment: IComment;
-  postAuthorId: string;
+  blogAuthorId: string;
   isSubmitting: boolean;
   canEdit: boolean;
   canDelete: boolean;
@@ -29,7 +29,7 @@ interface CommentItemProps {
 
 export function CommentItem({
   comment,
-  postAuthorId,
+  blogAuthorId,
   isSubmitting,
   canEdit,
   canDelete,
@@ -47,8 +47,8 @@ export function CommentItem({
 }: CommentItemProps) {
   const { data: session } = useSession();
 
-  const isPostOwner =
-    session?.user?.id === postAuthorId && session.user.id !== comment.author.id;
+  const isBlogOwner =
+    session?.user?.id === blogAuthorId && session.user.id !== comment.author.id;
 
   const handleUpdate = async () => {
     if (editingCommentId && editContent.trim()) {
@@ -77,7 +77,7 @@ export function CommentItem({
               @{comment.author.username}
             </span>
             {/* แสดงไอคอนถ้าเป็นเจ้าของโพสต์ */}
-            {comment.author.id === postAuthorId && (
+            {comment.author.id === blogAuthorId && (
               <Shield className="w-3 h-3 text-blue-500" />
             )}
             <span className="text-xs text-slate-500">
@@ -109,7 +109,7 @@ export function CommentItem({
                   onClick={() => onDelete(comment)}
                   className="h-6 w-6 p-0 text-slate-500 hover:text-red-600"
                   title={
-                    isPostOwner
+                    isBlogOwner
                       ? "ลบความคิดเห็น (เจ้าของโพสต์)"
                       : "ลบความคิดเห็น"
                   }

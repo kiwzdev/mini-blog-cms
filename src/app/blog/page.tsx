@@ -5,7 +5,7 @@ import { useState, Suspense, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import PostCardSkeleton from "@/components/blog/BlogCardSkeleton";
+import BlogCardSkeleton from "@/components/blog/BlogCardSkeleton";
 import BlogCard from "@/components/blog/BlogCard";
 import MainNavbar from "@/components/layout/Navbar";
 import {
@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { IBlogCard } from "@/types/blog";
 import { useLoading } from "@/stores/useLoadingStore";
-import { getAllPosts } from "@/api/post";
+import { getAllBlogs } from "@/api/blog";
 import Loading from "@/components/layout/Loading";
 import { BLOG_CATEGORIES } from "@/lib/config";
 import toast from "react-hot-toast";
@@ -31,7 +31,7 @@ export default function BlogPage() {
     "all"
   );
 
-  const [posts, setPosts] = useState<IBlogCard[] | null>(null);
+  const [blogs, setBlogs] = useState<IBlogCard[] | null>(null);
   const { isLoading, setLoading } = useLoading(`blog-feed`);
 
   const [pagination, setPagination] = useState<{
@@ -42,10 +42,10 @@ export default function BlogPage() {
   } | null>(null);
 
   useEffect(() => {
-    const fetchPost = async () => {
+    const fetchBlog = async () => {
       setLoading(true);
       try {
-        fetchPosts();
+        fetchBlogs();
       } catch (err: unknown) {
         const errorMessage =
           err instanceof Error ? err.message : "Something went wrong";
@@ -55,17 +55,16 @@ export default function BlogPage() {
       }
     };
 
-    fetchPost();
+    fetchBlog();
   }, []);
 
-  const fetchPosts = async (page = 1) => {
-    const response = await getAllPosts({
+  const fetchBlogs = async (page = 1) => {
+    const response = await getAllBlogs({
       page,
       limit: 10,
-      includeDetails: false,
     });
     if (response.success) {
-      setPosts(response.data.posts);
+      setBlogs(response.data.blogs);
       setPagination(response.data.pagination);
     } else if (response.error) {
       throw new Error(response.error.message);
@@ -74,28 +73,28 @@ export default function BlogPage() {
 
   const handlePageChange = (newPage: number) => {
     setPagination((p) => ({ ...p!, page: newPage }));
-    fetchPosts(newPage);
+    fetchBlogs(newPage);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   // Filter และ Search logic
-  const filteredPosts = posts?.filter((post) => {
+  const filteredBlogs = blogs?.filter((blog) => {
     // Search filter
     const matchesSearch =
-      post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      post.excerpt.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      post.author.name.toLowerCase().includes(searchQuery.toLowerCase());
+      blog.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      blog.excerpt.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      blog.author.name.toLowerCase().includes(searchQuery.toLowerCase());
     // Category filter
     const matchesCategory =
-      selectedCategory === "all" || post.category === selectedCategory;
+      selectedCategory === "all" || blog.category === selectedCategory;
 
     // Time range filter
     let matchesTimeRange = true;
     if (timeRange !== "all") {
       const now = new Date();
-      const postDate = new Date(post.createdAt);
+      const blogDate = new Date(blog.createdAt);
       const daysDiff = Math.floor(
-        (now.getTime() - postDate.getTime()) / (1000 * 60 * 60 * 24)
+        (now.getTime() - blogDate.getTime()) / (1000 * 60 * 60 * 24)
       );
 
       switch (timeRange) {
@@ -115,8 +114,8 @@ export default function BlogPage() {
   });
 
   // Sort logic
-  const sortedPosts = filteredPosts
-    ? [...filteredPosts].sort((a, b) => {
+  const sortedBlogs = filteredBlogs
+    ? [...filteredBlogs].sort((a, b) => {
         if (a._count && b._count) {
           if (sortBy === "latest") {
             return (
@@ -228,7 +227,7 @@ export default function BlogPage() {
     );
   };
 
-  if (isLoading || !posts) return <Loading />;
+  if (isLoading || !blogs) return <Loading />;
   else
     return (
       <>
@@ -362,9 +361,9 @@ export default function BlogPage() {
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-4">
                 <p className="text-slate-600 dark:text-slate-400">
-                  {filteredPosts?.length === posts.length
-                    ? `ทั้งหมด ${sortedPosts.length} โพสต์`
-                    : `พบ ${sortedPosts.length} โพสต์จากทั้งหมด ${posts.length} โพสต์`}
+                  {filteredBlogs?.length === blogs.length
+                    ? `ทั้งหมด ${sortedBlogs.length} โพสต์`
+                    : `พบ ${sortedBlogs.length} โพสต์จากทั้งหมด ${blogs.length} โพสต์`}
                 </p>
 
                 {/* Pagination Info */}
@@ -394,13 +393,13 @@ export default function BlogPage() {
               )}
             </div>
 
-            {/* Posts Grid */}
-            {sortedPosts.length > 0 ? (
+            {/* Blogs Grid */}
+            {sortedBlogs.length > 0 ? (
               <>
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  <Suspense fallback={<PostCardSkeleton />}>
-                    {sortedPosts.map((post) => (
-                      <BlogCard key={post.id} post={post as IBlogCard} />
+                  <Suspense fallback={<BlogCardSkeleton />}>
+                    {sortedBlogs.map((blog) => (
+                      <BlogCard key={blog.id} blog={blog as IBlogCard} />
                     ))}
                   </Suspense>
                 </div>

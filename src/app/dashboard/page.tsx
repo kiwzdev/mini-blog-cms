@@ -24,7 +24,7 @@ export default function DashboardPage() {
           asChild
           className="bg-gradient-to-r from-blue-600 to-purple-600"
         >
-          <Link href="/dashboard/posts/new">
+          <Link href="/dashboard/blogs/new">
             <PlusCircle className="w-4 h-4 mr-2" />
             เขียนบล็อกใหม่
           </Link>
@@ -84,7 +84,7 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Recent Posts */}
+      {/* Recent Blogs */}
       <Card className="glass-card">
         <CardHeader>
           <CardTitle>โพสต์ล่าสุด</CardTitle>
@@ -92,7 +92,7 @@ export default function DashboardPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {/* Mock recent posts */}
+            {/* Mock recent blogs */}
             {[
               {
                 title: "Getting Started with Next.js 14",
@@ -109,15 +109,15 @@ export default function DashboardPage() {
                 status: "Published",
                 date: "2024-01-10",
               },
-            ].map((post, index) => (
+            ].map((blog, index) => (
               <div
                 key={index}
                 className="flex items-center justify-between p-4 border border-slate-200 dark:border-slate-700 rounded-lg"
               >
                 <div>
-                  <h4 className="font-medium">{post.title}</h4>
+                  <h4 className="font-medium">{blog.title}</h4>
                   <p className="text-sm text-slate-500">
-                    {post.status} • {post.date}
+                    {blog.status} • {blog.date}
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -133,7 +133,7 @@ export default function DashboardPage() {
           </div>
           <div className="mt-6">
             <Button asChild variant="outline" className="w-full">
-              <Link href="/dashboard/posts">ดูโพสต์ทั้งหมด</Link>
+              <Link href="/dashboard/blogs">ดูโพสต์ทั้งหมด</Link>
             </Button>
           </div>
         </CardContent>

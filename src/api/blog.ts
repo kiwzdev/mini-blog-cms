@@ -5,56 +5,56 @@ import { handleApiError } from "@/lib/api-response";
 import { ICreateBlogInput, IUpdateBlogInput } from "@/types/blog";
 
 // For Blog page
-export const getAllPosts = async (params?: {
+export const getAllBlogs = async (params?: {
   userId?: string;
   limit?: number;
   page?: number;
 }): Promise<ApiResponse> => {
   try {
-    const { data } = await axios.get("/api/posts", { params });
+    const { data } = await axios.get("/api/blogs", { params });
     return data;
   } catch (error) {
     return handleApiError(error);
   }
 };
 
-// For Post detail page - Full Info
-export const getPostById = async (postId: string): Promise<ApiResponse> => {
+// For Blog detail page - Full Info
+export const getBlogById = async (blogId: string): Promise<ApiResponse> => {
   try {
-    const { data } = await axios.get(`/api/posts/${postId}`);
+    const { data } = await axios.get(`/api/blogs/${blogId}`);
     return data;
   } catch (error) {
     return handleApiError(error);
   }
 };
 
-// Post Actions
-export const createPost = async (
-  postData: ICreateBlogInput
+// Blog Actions
+export const createBlog = async (
+  blogData: ICreateBlogInput
 ): Promise<ApiResponse> => {
   try {
-    const { data } = await axios.post("/api/posts", postData);
+    const { data } = await axios.post("/api/blogs", blogData);
     return data;
   } catch (error) {
     return handleApiError(error);
   }
 };
 
-export const updatePost = async (
-  postId: string,
-  postData: IUpdateBlogInput
+export const updateBlog = async (
+  blogId: string,
+  blogData: IUpdateBlogInput
 ): Promise<ApiResponse> => {
   try {
-    const { data } = await axios.put(`/api/posts/${postId}`, postData);
+    const { data } = await axios.put(`/api/blogs/${blogId}`, blogData);
     return data;
   } catch (error) {
     return handleApiError(error);
   }
 };
 
-export const deletePost = async (id: string): Promise<ApiResponse> => {
+export const deleteBlog = async (id: string): Promise<ApiResponse> => {
   try {
-    const { data } = await axios.delete(`/api/posts/${id}`);
+    const { data } = await axios.delete(`/api/blogs/${id}`);
     return data;
   } catch (error) {
     return handleApiError(error);

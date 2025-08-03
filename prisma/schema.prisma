@@ -26,16 +26,39 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts Account[]
+  // Stats
+  views Int @default(0)
 
-  posts        Post[]
-  comments     Comment[]
-  postLikes    PostLike[]
-  commentLikes CommentLike[]
-  following    Follow[] // คนที่เรา follow
-  followers    Follow[] @relation("UserFollowers") // คนที่ follow เรา
+  // Profile
+  bio          String?
+  location     String?
+  website      String?
+  jobTitle     String?
+  company      String?
+  education    String?
+  birthDate    DateTime?
+  phone        String?
+  isVerified   Boolean   @default(false)
+  badge        String? // 'creator', 'pro', 'premium'
+  status       String    @default("active") // 'active', 'inactive', 'banned'
+  lastActiveAt DateTime?
 
+  // set default JSON value when creating user
+
+  // Social Links - เก็บเป็น JSON
+  socialLinks Json? // { twitter: "", github: "", linkedin: "", etc. }
+  // Settings - เก็บเป็น JSON  
+  settings Json? // { profileVisibility: "public", showEmail: false, etc. }
+
+  accounts            Account[]
+  blogs               Blog[]
+  comments            Comment[]            @relation("UserComments")
+  blogLikes           BlogLike[]
+  commentLikes        CommentLike[]
+  following           Follow[]
+  followers           Follow[]             @relation("UserFollowers")
   passwordResetTokens PasswordResetToken[]
+  Comment             Comment[]            @relation("CommentAuthor")
 
   @@map("users")
 }
@@ -59,7 +82,7 @@ model Account {
   @@unique([provider, providerAccountId])
 }
 
-model Post {
+model Blog {
   id          String   @id @default(cuid())
   title       String
   slug        String   @unique
@@ -75,9 +98,9 @@ model Post {
   authorId String
   author   User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
   comments Comment[]
-  likes    PostLike[]
+  likes    BlogLike[]
 
-  @@map("posts")
+  @@map("blogs")
 }
 
 model Comment {
@@ -86,27 +109,29 @@ model Comment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  postId   String
-  post     Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
+  blogId   String?
+  blog     Blog?         @relation(fields: [blogId], references: [id], onDelete: Cascade)
   authorId String
-  author   User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  author   User          @relation("CommentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
   likes    CommentLike[]
+  User     User?         @relation("UserComments", fields: [userId], references: [id])
+  userId   String?
 
   @@map("comments")
 }
 
-model PostLike {
+model BlogLike {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
 
-  postId String
+  blogId String
   userId String
 
-  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  blog Blog @relation(fields: [blogId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([postId, userId])
-  @@map("post_likes")
+  @@unique([blogId, userId])
+  @@map("blog_likes")
 }
 
 // Like สำหรับ Comment

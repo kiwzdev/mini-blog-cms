@@ -2,7 +2,7 @@
 export * from "./categories";
 // export * from "./site";
 // export * from "./editor";
-// export * from "./post";
+// export * from "./blog";
 // export * from "./ui";
 // export * from "./api";
 // export * from "./seo";

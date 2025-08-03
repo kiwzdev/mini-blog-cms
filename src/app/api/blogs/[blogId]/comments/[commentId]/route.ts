@@ -1,4 +1,4 @@
-// app/api/posts/[postId]/comments/[commentId]/route.ts
+// app/api/blogs/[blogId]/comments/[commentId]/route.ts
 import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { createErrorResponse, createSuccessResponse } from "@/lib/api-response";
@@ -7,11 +7,11 @@ import prisma from "@/lib/db";
 import { IComment } from "@/types/blog";
 
 type ParamsType = {
-  postId: string;
+  blogId: string;
   commentId: string;
 };
 
-// PUT /api/posts/{postId}/comments/{commentId} - Edit a comment
+// PUT /api/blogs/{blogId}/comments/{commentId} - Edit a comment
 export async function PUT(
   request: NextRequest,
   { params }: { params: ParamsType }
@@ -27,7 +27,7 @@ export async function PUT(
       });
     }
 
-    const { postId, commentId } = await params;
+    const { blogId, commentId } = await params;
     const body = await request.json();
     const { content } = body;
 
@@ -47,11 +47,11 @@ export async function PUT(
       });
     }
 
-    // Check if comment exists and belongs to the post
+    // Check if comment exists and belongs to the blog
     const existingComment = await prisma.comment.findFirst({
       where: {
         id: commentId,
-        postId: postId,
+        blogId: blogId,
       },
     });
 
@@ -133,7 +133,7 @@ export async function PUT(
   }
 }
 
-// DELETE /api/posts/{postId}/comments/{commentId} - Delete a comment
+// DELETE /api/blogs/{blogId}/comments/{commentId} - Delete a comment
 export async function DELETE(
   request: NextRequest,
   { params }: { params: ParamsType }
@@ -149,16 +149,16 @@ export async function DELETE(
       });
     }
 
-    const { postId, commentId } = await params;
+    const { blogId, commentId } = await params;
 
-    // Check if comment exists and belongs to the post
+    // Check if comment exists and belongs to the blog
     const existingComment = await prisma.comment.findFirst({
       where: {
         id: commentId,
-        postId: postId,
+        blogId: blogId,
       },
       include: {
-        post: {
+        blog: {
           select: {
             authorId: true,
           },
@@ -174,14 +174,14 @@ export async function DELETE(
       });
     }
 
-    // Check if user is the author of the comment or the post owner
+    // Check if user is the author of the comment or the blog owner
     const isCommentAuthor = existingComment.authorId === session.user.id;
-    const isPostOwner = existingComment.post.authorId === session.user.id;
+    const isBlogOwner = existingComment.blog?.authorId === session.user.id;
 
-    if (!isCommentAuthor && !isPostOwner) {
+    if (!isCommentAuthor && !isBlogOwner) {
       return createErrorResponse({
         code: "FORBIDDEN",
-        message: "You can only delete your own comments or comments on your posts",
+        message: "You can only delete your own comments or comments on your blogs",
         status: 403,
       });
     }

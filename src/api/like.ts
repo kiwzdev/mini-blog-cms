@@ -2,10 +2,10 @@ import { ApiResponse } from "@/types/api";
 import axios from "axios";
 import { handleApiError } from "@/lib/api-response";
 
-// Like Post
-export const toggleLikePost = async (postId: string): Promise<ApiResponse> => {
+// Like Blog
+export const toggleLikeBlog = async (blogId: string): Promise<ApiResponse> => {
   try {
-    const { data } = await axios.post(`/api/posts/${postId}/like`);
+    const { data } = await axios.post(`/api/blogs/${blogId}/like`);
     return data;
   } catch (error) {
     return handleApiError(error);
@@ -47,15 +47,15 @@ export const toggleLikeComment = async (
 
 
 // Like Details (เฉพาะเมื่อต้องการรายละเอียด เช่น "ใครบ้างที่ไลค์")
-export const getPostLikes = async (
-  postId: string,
+export const getBlogLikes = async (
+  blogId: string,
   params?: {
     limit?: number;
     page?: number;
   }
 ): Promise<ApiResponse> => {
   try {
-    const { data } = await axios.get(`/api/posts/${postId}/likes`, { params });
+    const { data } = await axios.get(`/api/blogs/${blogId}/likes`, { params });
     return data;
   } catch (error) {
     return handleApiError(error);

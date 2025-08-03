@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { useLikePost } from "@/hooks/useLikePost";
+import { useLikeBlog } from "@/hooks/useLikeBlog";
 import { getImageUrl } from "@/lib/image";
 import { formatDate } from "@/lib/utils";
 import { IBlogCard } from "@/types/blog";
@@ -9,11 +9,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { LikeButton } from "./LikeButton";
 
-function BlogCard({ post }: { post: IBlogCard }) {
-  const { isLiked, likeCount, isLiking, toggleLike } = useLikePost(
-    post.id,
-    post.isLiked,
-    post._count?.likes || 0
+function BlogCard({ blog }: { blog: IBlogCard }) {
+  const { isLiked, likeCount, isLiking, toggleLike } = useLikeBlog(
+    blog.id,
+    blog.isLiked,
+    blog._count?.likes || 0
   );
 
   return (
@@ -22,11 +22,11 @@ function BlogCard({ post }: { post: IBlogCard }) {
       <div className="relative h-48 overflow-hidden">
         <Image
           src={
-            post.coverImage
-              ? getImageUrl(post.coverImage)
+            blog.coverImage
+              ? getImageUrl(blog.coverImage)
               : process.env.NEXT_PUBLIC_DEFAULT_POST_IMAGE!
           }
-          alt={post.title}
+          alt={blog.title}
           fill
           className="object-cover group-hover:scale-110 transition-transform duration-300"
         />
@@ -38,32 +38,32 @@ function BlogCard({ post }: { post: IBlogCard }) {
         <div className="flex items-center gap-3 mb-4">
           <Image
             src={
-              post.author.profileImage
-                ? getImageUrl(post.author.profileImage)
+              blog.author.profileImage
+                ? getImageUrl(blog.author.profileImage)
                 : process.env.NEXT_PUBLIC_DEFAULT_POST_IMAGE!
             }
-            alt={post.author.name ?? process.env.NEXT_PUBLIC_DEFAULT_NAME!}
+            alt={blog.author.name ?? process.env.NEXT_PUBLIC_DEFAULT_NAME!}
             width={32}
             height={32}
             className="rounded-full"
           />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">{post.author.name}</p>
+            <p className="text-sm font-medium truncate">{blog.author.name}</p>
             <div className="flex items-center gap-1 text-xs text-slate-500">
               <Clock className="w-3 h-3" />
-              {formatDate(post.createdAt)}
+              {formatDate(blog.createdAt)}
             </div>
           </div>
         </div>
 
         {/* Title & Excerpt */}
-        <Link href={`/blog/${post.id}`}>
+        <Link href={`/blog/${blog.id}`}>
           <h2 className="text-xl font-bold mb-3 line-clamp-2 group-hover:text-blue-600 transition-colors">
-            {post.title}
+            {blog.title}
           </h2>
         </Link>
         <p className="text-slate-600 dark:text-slate-400 text-sm mb-4 line-clamp-3">
-          {post.excerpt}
+          {blog.excerpt}
         </p>
 
         {/* Stats & Read More */}
@@ -80,11 +80,11 @@ function BlogCard({ post }: { post: IBlogCard }) {
             </div>
             <div className="flex items-center gap-1">
               <MessageCircle className="w-4 h-4" />
-              {(post._count && post._count.comments) || 0}
+              {(blog._count && blog._count.comments) || 0}
             </div>
           </div>
           <Button asChild variant="ghost" size="sm">
-            <Link href={`/blog/${post.id}`}>อ่านต่อ →</Link>
+            <Link href={`/blog/${blog.id}`}>อ่านต่อ →</Link>
           </Button>
         </div>
       </CardContent>

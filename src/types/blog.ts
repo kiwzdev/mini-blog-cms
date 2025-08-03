@@ -71,7 +71,7 @@ export interface IComment {
 
 export interface ILike {
   id: string;
-  postId: string;
+  blogId: string;
   userId: string;
   user: IUser;
 }

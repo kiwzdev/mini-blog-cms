@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 
-function PostCardSkeleton() {
+function BlogCardSkeleton() {
   return (
     <>
       {[...Array(6)].map((_, i) => (
@@ -33,4 +33,4 @@ function PostCardSkeleton() {
   );
 }
 
-export default PostCardSkeleton;
+export default BlogCardSkeleton;

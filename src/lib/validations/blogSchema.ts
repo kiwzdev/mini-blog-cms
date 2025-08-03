@@ -1,7 +1,7 @@
-// lib/validations/postSchema.ts
+// lib/validations/blogSchema.ts
 import { z } from "zod";
 
-export const createPostSchema = z.object({
+export const createBlogSchema = z.object({
   title: z
     .string()
     .trim()
@@ -15,7 +15,7 @@ export const createPostSchema = z.object({
     .max(100, "Slug must be at most 100 characters")
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
       message:
-        "Slug must be lowercase letters, numbers, and hyphens only (e.g., my-blog-post)",
+        "Slug must be lowercase letters, numbers, and hyphens only (e.g., my-blog-blog)",
     }),
 
   content: z.string().trim().min(1, "Content is required"),
@@ -48,7 +48,7 @@ export const createPostSchema = z.object({
     .optional(),
 });
 
-export const updatePostSchema = z.object({
+export const updateBlogSchema = z.object({
   title: z
     .string()
     .trim()
@@ -63,7 +63,7 @@ export const updatePostSchema = z.object({
     .max(100, "Slug must be at most 100 characters")
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
       message:
-        "Slug must be lowercase letters, numbers, and hyphens only (e.g., my-blog-post)",
+        "Slug must be lowercase letters, numbers, and hyphens only (e.g., my-blog-blog)",
     })
     .optional(),
 
@@ -98,5 +98,5 @@ export const updatePostSchema = z.object({
 });
 
 // Type inference สำหรับใช้ใน TypeScript
-export type CreatePostInput = z.infer<typeof createPostSchema>;
-export type UpdatePostInput = z.infer<typeof updatePostSchema>;
+export type CreateBlogInput = z.infer<typeof createBlogSchema>;
+export type UpdateBlogInput = z.infer<typeof updateBlogSchema>;

@@ -9,16 +9,16 @@ import { ArrowLeft, Clock, Eye, Share2, Edit3 } from "lucide-react";
 import { IBlog } from "@/types/blog";
 import { isOwner } from "@/lib/auth";
 import { getImageUrl } from "@/lib/image";
-import { useLikePost } from "@/hooks/useLikePost";
+import { useLikeBlog } from "@/hooks/useLikeBlog";
 import { useSession } from "next-auth/react";
 import { LikeButton } from "./LikeButton";
 
-export function BlogContent({ post }: { post: IBlog }) {
+export function BlogContent({ blog }: { blog: IBlog }) {
   const { data: session } = useSession();
-  const { isLiked, likeCount, isLiking, toggleLike } = useLikePost(
-    post.id,
-    post.isLiked,
-    post._count?.likes || 0
+  const { isLiked, likeCount, isLiking, toggleLike } = useLikeBlog(
+    blog.id,
+    blog.isLiked,
+    blog._count?.likes || 0
   );
 
   return (
@@ -34,17 +34,17 @@ export function BlogContent({ post }: { post: IBlog }) {
           </Button>
         </div>
 
-        {/* Post Header */}
+        {/* Blog Header */}
         <div className="mb-8">
           {/* Cover Image */}
           <div className="relative h-64 md:h-96 rounded-2xl overflow-hidden mb-8">
             <Image
               src={
-                post.coverImage
-                  ? getImageUrl(post.coverImage)
+                blog.coverImage
+                  ? getImageUrl(blog.coverImage)
                   : process.env.NEXT_PUBLIC_DEFAULT_COVER_IMAGE!
               }
-              alt={post.title}
+              alt={blog.title}
               fill
               className="object-cover"
               priority
@@ -55,17 +55,17 @@ export function BlogContent({ post }: { post: IBlog }) {
           {/* Title and Edit Button */}
           <div className="flex items-start justify-between mb-6">
             <h1 className="text-3xl md:text-5xl font-bold leading-tight flex-1 mr-4">
-              {post.title}
+              {blog.title}
             </h1>
 
             {/* Edit Button - แสดงเฉพาะเจ้าของโพส */}
-            {isOwner(post.author.id, session?.user?.id) && (
+            {isOwner(blog.author.id, session?.user?.id) && (
               <div className="flex-shrink-0">
                 <Button
                   asChild
                   className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
                 >
-                  <Link href={`/blog/${post.id}/edit`}>
+                  <Link href={`/blog/${blog.id}/edit`}>
                     <Edit3 className="w-4 h-4 mr-2" />
                     แก้ไขโพส
                   </Link>
@@ -79,20 +79,20 @@ export function BlogContent({ post }: { post: IBlog }) {
             <div className="flex items-center gap-2">
               <Image
                 src={
-                  post.author.profileImage ||
+                  blog.author.profileImage ||
                   process.env.NEXT_PUBLIC_DEFAULT_POST_IMAGE!
                 }
-                alt={post.author.name || process.env.NEXT_PUBLIC_DEFAULT_NAME!}
+                alt={blog.author.name || process.env.NEXT_PUBLIC_DEFAULT_NAME!}
                 width={40}
                 height={40}
                 className="rounded-full"
               />
-              <span className="font-medium">{post.author.name}</span>
+              <span className="font-medium">{blog.author.name}</span>
             </div>
 
             <div className="flex items-center gap-1">
               <Clock className="w-4 h-4" />
-              {formatDate(post.createdAt)}
+              {formatDate(blog.createdAt)}
             </div>
 
             <div className="flex items-center gap-1">
@@ -117,14 +117,14 @@ export function BlogContent({ post }: { post: IBlog }) {
           </div>
         </div>
 
-        {/* Post Content */}
+        {/* Blog Content */}
         <Card className="glass-card mb-12">
           <CardContent className="p-8">
             <div className="prose prose-lg max-w-none dark:prose-invert">
               {/* ในการใช้งานจริงจะใช้ Markdown parser หรือ Rich Text renderer */}
               <div
                 dangerouslySetInnerHTML={{
-                  __html: convertMarkdownToHTML(post.content),
+                  __html: convertMarkdownToHTML(blog.content),
                 }}
               />
             </div>
@@ -133,8 +133,8 @@ export function BlogContent({ post }: { post: IBlog }) {
 
         {/* Comment Section */}
         <CommentSection
-          postId={post.id}
-          postAuthorId={post.author.id}
+          blogId={blog.id}
+          blogAuthorId={blog.author.id}
           allowComments={true}
           showCommentCount={true}
         />
