@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { useLikeBlog } from "@/hooks/useLikeBlog";
+import { useBlogLike } from "@/hooks/useLike";
 import { getImageUrl } from "@/lib/image";
 import { formatDate } from "@/lib/utils";
 import { IBlogCard } from "@/types/blog";
@@ -10,7 +10,7 @@ import Link from "next/link";
 import { LikeButton } from "./LikeButton";
 
 function BlogCard({ blog }: { blog: IBlogCard }) {
-  const { isLiked, likeCount, isLiking, toggleLike } = useLikeBlog(
+  const { isLiked, likeCount, isLiking, toggleLike } = useBlogLike(
     blog.id,
     blog.isLiked,
     blog._count?.likes || 0

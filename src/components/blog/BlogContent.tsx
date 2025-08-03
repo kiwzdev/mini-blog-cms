@@ -9,13 +9,13 @@ import { ArrowLeft, Clock, Eye, Share2, Edit3 } from "lucide-react";
 import { IBlog } from "@/types/blog";
 import { isOwner } from "@/lib/auth";
 import { getImageUrl } from "@/lib/image";
-import { useLikeBlog } from "@/hooks/useLikeBlog";
+import { useBlogLike } from "@/hooks/useLike";
 import { useSession } from "next-auth/react";
 import { LikeButton } from "./LikeButton";
 
 export function BlogContent({ blog }: { blog: IBlog }) {
   const { data: session } = useSession();
-  const { isLiked, likeCount, isLiking, toggleLike } = useLikeBlog(
+  const { isLiked, likeCount, isLiking, toggleLike } = useBlogLike(
     blog.id,
     blog.isLiked,
     blog._count?.likes || 0

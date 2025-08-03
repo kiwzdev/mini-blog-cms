@@ -1,4 +1,4 @@
-import { ApiResponse } from "@/types/api";
+import { ApiResponse, Meta } from "@/types/api";
 import axios from "axios";
 import { NextResponse } from "next/server";
 
@@ -32,10 +32,12 @@ export const handleApiError = async (error: unknown): Promise<ApiResponse> => {
 export function createSuccessResponse({
   data,
   message,
+  meta,
   status = 200,
 }: {
   data?: any;
   message?: string;
+  meta?: Meta;
   status?: number;
 } = {}) {
   return NextResponse.json(
@@ -43,6 +45,7 @@ export function createSuccessResponse({
       success: true,
       ...(data && { data }),
       ...(message && { message }),
+      ...(meta && { meta }),
     } as ApiResponse,
     { status }
   );

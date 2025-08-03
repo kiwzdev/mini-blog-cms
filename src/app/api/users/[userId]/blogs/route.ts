@@ -103,12 +103,12 @@ export async function GET(
     return createSuccessResponse({
       data: responseData,
       message: "User blogs fetched successfully",
-    //   meta: {
-    //     page,
-    //     limit,
-    //     total: totalPosts,
-    //     totalPages: Math.ceil(totalPosts / limit),
-    //   },
+      meta: {
+        page,
+        limit,
+        total: totalPosts,
+        totalPages: Math.ceil(totalPosts / limit),
+      },
     });
   } catch (error) {
     console.error("Error fetching user blogs:", error);

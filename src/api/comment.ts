@@ -78,14 +78,11 @@ export const getUserComments = async (
 
 export const createUserComment = async (
   userId: string,
-  commentData: {
-    content: string;
-    userId: string;
-  }
+  content: string
 ): Promise<ApiResponse> => {
   try {
     const { data } = await axios.post(`/api/users/${userId}/comments`, {
-      ...commentData,
+      content,
     });
     return data;
   } catch (error) {
@@ -95,48 +92,28 @@ export const createUserComment = async (
 
 export const editUserComment = async (
   userId: string,
-  commentData: {
-    content: string;
-    userId: string;
-  }
-): Promise<ApiResponse> => {
-  try {
-    const { data } = await axios.put(`/api/users/${userId}/comments`, {
-      ...commentData,
-    });
-    return data;
-  } catch (error) {
-    return handleApiError(error);
-  }
-};
-
-// Comment CRUD (แยก Resource)
-export const getComment = async (commentId: string): Promise<ApiResponse> => {
-  try {
-    const { data } = await axios.get(`/api/comments/${commentId}`);
-    return data;
-  } catch (error) {
-    return handleApiError(error);
-  }
-};
-
-export const updateComment = async (
   commentId: string,
   content: string
 ): Promise<ApiResponse> => {
   try {
-    const { data } = await axios.put(`/api/comments/${commentId}`, { content });
+    const { data } = await axios.put(
+      `/api/users/${userId}/comments${commentId}`,
+      { content }
+    );
     return data;
   } catch (error) {
     return handleApiError(error);
   }
 };
 
-export const deleteComment = async (
+export const deleteUserComment = async (
+  userId: string,
   commentId: string
 ): Promise<ApiResponse> => {
   try {
-    const { data } = await axios.delete(`/api/comments/${commentId}`);
+    const { data } = await axios.delete(
+      `/api/users/${userId}/comments/${commentId}`
+    );
     return data;
   } catch (error) {
     return handleApiError(error);

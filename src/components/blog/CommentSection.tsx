@@ -5,8 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { MessageCircle, Send } from "lucide-react";
-import { useComment } from "@/hooks/useComment";
-import { useLikeComment } from "@/hooks/useLikeComment";
+import { useBlogComment } from "@/hooks/useComment";
+import { useCommentLike } from "@/hooks/useLike";
 import { IComment } from "@/types/blog";
 import { useSession } from "next-auth/react";
 import { useConfirm } from "@/hooks/useConfirm";
@@ -42,17 +42,20 @@ export function CommentSection({
   const { confirmDelete } = useConfirm();
 
   const {
+    // State
     comments,
     newComment,
     isSubmitting,
     isLoading,
     commentCount,
+    
+    // Functions
     setNewComment,
     submitComment,
     fetchComments,
     deleteComment,
     updateComment,
-  } = useComment(blogId, {
+  } = useBlogComment(blogId, {
     initialComments,
     onError: setError,
   });
@@ -192,14 +195,14 @@ export function CommentSection({
         {/* Comments List */}
         <div className="space-y-4">
           {displayComments.map((comment) => {
-            // สร้าง useLikeComment สำหรับแต่ละ comment
+            // สร้าง useCommentLike สำหรับแต่ละ comment
             const CommentWithLike = () => {
               const {
                 isLiked,
                 likeCount,
                 isLiking,
                 toggleLike,
-              } = useLikeComment(
+              } = useCommentLike(
                 comment.id,
                 comment.isLiked || false, // ต้องเพิ่มใน IComment type
                 comment._count?.likes || 0    // ต้องเพิ่มใน IComment type

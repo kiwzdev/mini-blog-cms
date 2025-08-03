@@ -1,20 +1,60 @@
 // hooks/useComment.ts
+import { useState, useCallback } from "react";
+import toast from "react-hot-toast";
+import { IComment } from "@/types/blog";
 import {
   createBlogComment,
   deleteBlogComment,
   editBlogComment,
   getBlogComments,
+  createUserComment,
+  deleteUserComment,
+  editUserComment,
+  getUserComments,
 } from "@/api/comment";
-import { IComment } from "@/types/blog";
-import { useState, useCallback } from "react";
-import toast from "react-hot-toast";
+
+type CommentType = "blog" | "user";
+
+interface CommentApiMap {
+  blog: {
+    create: typeof createBlogComment;
+    delete: typeof deleteBlogComment;
+    edit: typeof editBlogComment;
+    get: typeof getBlogComments;
+  };
+  user: {
+    create: typeof createUserComment;
+    delete: typeof deleteUserComment;
+    edit: typeof editUserComment;
+    get: typeof getUserComments;
+  };
+}
+
+const commentApiMap: CommentApiMap = {
+  blog: {
+    create: createBlogComment,
+    delete: deleteBlogComment,
+    edit: editBlogComment,
+    get: getBlogComments,
+  },
+  user: {
+    create: createUserComment,
+    delete: deleteUserComment,
+    edit: editUserComment,
+    get: getUserComments,
+  },
+};
 
 export interface UseCommentOptions {
   initialComments?: IComment[];
   onError?: (error: string) => void;
 }
 
-export function useComment(blogId: string, options: UseCommentOptions = {}) {
+export function useComment(
+  type: CommentType,
+  targetId: string,
+  options: UseCommentOptions = {}
+) {
   const [comments, setComments] = useState<IComment[]>(
     options.initialComments || []
   );
@@ -22,13 +62,15 @@ export function useComment(blogId: string, options: UseCommentOptions = {}) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  const api = commentApiMap[type];
+
   // ดึงคอมเม้นต์ทั้งหมด
   const fetchComments = useCallback(async () => {
-    if (!blogId) return;
+    if (!targetId) return;
 
     setIsLoading(true);
     try {
-      const response = await getBlogComments(blogId);
+      const response = await api.get(targetId);
 
       if (response.success) {
         setComments(response.data);
@@ -39,21 +81,21 @@ export function useComment(blogId: string, options: UseCommentOptions = {}) {
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Error fetching comments";
-      console.error("Error fetching comments:", error);
+      console.error(`Error fetching ${type} comments:`, error);
       options.onError?.(errorMessage);
       return false;
     } finally {
       setIsLoading(false);
     }
-  }, [blogId, options]);
+  }, [targetId, api, type, options]);
 
   // เพิ่มคอมเม้นต์ใหม่
   const submitComment = useCallback(async () => {
-    if (!newComment.trim() || isSubmitting || !blogId) return;
+    if (!newComment.trim() || isSubmitting || !targetId) return;
 
     setIsSubmitting(true);
     try {
-      const response = await createBlogComment(blogId, newComment);
+      const response = await api.create(targetId, newComment);
 
       if (response.success) {
         // เพิ่มคอมเม้นต์ใหม่ที่ด้านบน
@@ -67,19 +109,19 @@ export function useComment(blogId: string, options: UseCommentOptions = {}) {
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Error adding comment";
-      console.error("Error submitting comment:", error);
+      console.error(`Error submitting ${type} comment:`, error);
       options.onError?.(errorMessage);
       return false;
     } finally {
       setIsSubmitting(false);
     }
-  }, [newComment, isSubmitting, blogId, options]);
+  }, [newComment, isSubmitting, targetId, api, type, options]);
 
   // ลบคอมเม้นต์
   const deleteComment = useCallback(
     async (commentId: string) => {
       try {
-        const response = await deleteBlogComment(blogId, commentId);
+        const response = await api.delete(targetId, commentId);
 
         if (response.success) {
           setComments((prev) =>
@@ -95,19 +137,19 @@ export function useComment(blogId: string, options: UseCommentOptions = {}) {
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : "Error deleting comment";
-        console.error("Error deleting comment:", error);
+        console.error(`Error deleting ${type} comment:`, error);
         options.onError?.(errorMessage);
         return false;
       }
     },
-    [blogId, options]
+    [targetId, api, type, options]
   );
 
   // อัพเดตคอมเม้นต์
   const updateComment = useCallback(
     async (commentId: string, content: string) => {
       try {
-        const response = await editBlogComment(blogId, commentId, content);
+        const response = await api.edit(targetId, commentId, content);
 
         if (response.success) {
           setComments((prev) =>
@@ -121,7 +163,7 @@ export function useComment(blogId: string, options: UseCommentOptions = {}) {
                 : comment
             )
           );
-        toast.success("Update comment successfully!");
+          toast.success("Update comment successfully!");
           return true;
         } else {
           throw new Error(
@@ -131,12 +173,12 @@ export function useComment(blogId: string, options: UseCommentOptions = {}) {
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : "Error updating comment";
-        console.error("Error updating comment:", error);
+        console.error(`Error updating ${type} comment:`, error);
         options.onError?.(errorMessage);
         return false;
       }
     },
-    [blogId, options]
+    [targetId, api, type, options]
   );
 
   return {
@@ -155,3 +197,7 @@ export function useComment(blogId: string, options: UseCommentOptions = {}) {
     updateComment,
   };
 }
+
+// Wrapper hooks
+export const useBlogComment = (blogId: string, options?: UseCommentOptions) => useComment("blog", blogId, options);
+export const useUserComment = (postId: string, options?: UseCommentOptions) => useComment("user", postId, options);

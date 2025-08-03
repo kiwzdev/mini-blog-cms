@@ -3,6 +3,14 @@ export interface ApiResponse {
   data?: any;
   error?: IError;
   message?: string; // เพิ่ม message สำหรับ success response
+  meta?: Meta;
+}
+
+export interface Meta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
 }
 
 export interface IError {
