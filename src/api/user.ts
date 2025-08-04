@@ -1,7 +1,7 @@
 import { ApiResponse } from "@/types/api";
 import axios from "axios";
 import { handleApiError } from "@/lib/api-response";
-import { UpdateUserData } from "@/types/user";
+import { IUpdateUserData } from "@/types/user";
 
 // For User profile page
 export const getUserBlogs = async (
@@ -33,7 +33,7 @@ export const getUserProfile = async (
 // Actions
 export const updateUser = async (
   username: string,
-  userData: UpdateUserData
+  userData: IUpdateUserData
 ): Promise<ApiResponse> => {
   try {
     const { data } = await axios.put(
