@@ -1,6 +1,7 @@
 import { ApiResponse } from "@/types/api";
 import axios from "axios";
 import { handleApiError } from "@/lib/api-response";
+import { UpdateUserData } from "@/types/user";
 
 // For User profile page
 export const getUserBlogs = async (
@@ -18,9 +19,11 @@ export const getUserBlogs = async (
 };
 
 // For User profile page
-export const getUserProfile = async (userId: string): Promise<ApiResponse> => {
+export const getUserProfile = async (
+  username: string
+): Promise<ApiResponse> => {
   try {
-    const { data } = await axios.get(`/api/users/${userId}/profile`);
+    const { data } = await axios.get(`/api/users/profile/${username}`);
     return data; // รวม user info + stats + recent blogs
   } catch (error) {
     return handleApiError(error);
@@ -29,16 +32,14 @@ export const getUserProfile = async (userId: string): Promise<ApiResponse> => {
 
 // Actions
 export const updateUser = async (
-  userId: string,
-  userData: {
-    name?: string;
-    bio?: string;
-    image?: string;
-    coverImage?: string;
-  }
+  username: string,
+  userData: UpdateUserData
 ): Promise<ApiResponse> => {
   try {
-    const { data } = await axios.put(`/api/users/${userId}`, userData);
+    const { data } = await axios.put(
+      `/api/users/profile/${username}`,
+      userData
+    );
     return data;
   } catch (error) {
     return handleApiError(error);

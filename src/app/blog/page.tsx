@@ -369,7 +369,7 @@ export default function BlogPage() {
                 {/* Pagination Info */}
                 {pagination && (
                   <p className="text-sm text-slate-500">
-                    หน้า {pagination.page} จาก {pagination.pages}
+                    หน้า {pagination.page} จาก {pagination.pages || 1}
                   </p>
                 )}
               </div>
@@ -418,7 +418,7 @@ export default function BlogPage() {
                   <p className="text-slate-500 mb-4">
                     ลองปรับเปลี่ยนคำค้นหาหรือตัวกรองเพื่อค้นหาบทความที่คุณสนใจ
                   </p>
-                  <div className="flex flex-wrap gap-2 justify-center">
+                  <div className="flex flex-wrap gap-2 justify-center items-center">
                     <span className="text-sm text-slate-400">คำแนะนำ:</span>
                     {["JavaScript", "React", "Next.js", "CSS"].map(
                       (suggestion) => (

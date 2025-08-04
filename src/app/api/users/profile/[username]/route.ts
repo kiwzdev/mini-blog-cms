@@ -12,7 +12,7 @@ import {
   IUserStatus,
 } from "@/types/user";
 
-type ParamsType = Promise<{ userId: string }>;
+type ParamsType = Promise<{ username: string }>;
 
 // GET /api/users/[userId]/profile - ดึงข้อมูลโปรไฟล์และสถิติ
 export async function GET(
@@ -20,11 +20,11 @@ export async function GET(
   { params }: { params: ParamsType }
 ) {
   try {
-    const { userId } = await params;
+    const { username } = await params;
     const session = await getServerSession(authOptions);
 
     const user = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { username: username },
       include: {
         _count: {
           select: {
@@ -47,7 +47,7 @@ export async function GET(
     }
 
     // Check if user is viewing their own profile
-    const isOwnProfile = session?.user?.id === userId;
+    const isOwnProfile = session?.user?.username === username;
 
     const responseData: IUserProfile = {
       id: user.id,
@@ -65,6 +65,7 @@ export async function GET(
       education: user.education || "",
       status: user.status as IUserStatus,
       badge: user.badge as IUserBadge,
+      isVerified: user.emailVerified || undefined,
       _count: {
         ...user._count,
         views: user.views,
@@ -98,7 +99,7 @@ export async function PUT(
   { params }: { params: ParamsType }
 ) {
   try {
-    const { userId } = await params;
+    const { username } = await params;
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
@@ -109,7 +110,7 @@ export async function PUT(
       });
     }
 
-    if (session.user.id !== userId) {
+    if (session.user.username !== username) {
       return createErrorResponse({
         code: "FORBIDDEN",
         message: "You can only update your own profile",
@@ -134,7 +135,7 @@ export async function PUT(
     } = body;
 
     const updatedUser = await prisma.user.update({
-      where: { id: userId },
+      where: { username: username },
       data: {
         ...(name && { name }),
         ...(bio !== undefined && { bio }),

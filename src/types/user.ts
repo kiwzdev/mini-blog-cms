@@ -29,6 +29,7 @@ export interface IUserProfile {
   location?: string;
   createdAt: Date;
   lastActiveAt?: Date;
+  isVerified?: Date;
 
   // Professional info
   jobTitle?: string;
@@ -82,4 +83,19 @@ export interface IUserCount {
   blogLikes: number;
   views: number;
   comments: number;
+}
+
+export interface IUpdateUserData {
+  name?: string;
+  bio?: string;
+  profileImage?: string;
+  coverImage?: string;
+  location?: string;
+  website?: string;
+  jobTitle?: string;
+  company?: string;
+  education?: string;
+  phone?: string;
+  socialLinks?: IUserProfile['socialLinks'];
+  settings?: IUserProfile['settings'];
 }

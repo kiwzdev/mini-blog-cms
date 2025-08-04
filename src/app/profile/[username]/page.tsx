@@ -1,7 +1,7 @@
 // app/profile/[username]/page.tsx
 "use client";
-import { Suspense } from "react";
-import { notFound } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { notFound, useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,7 @@ import {
   Check,
   RefreshCw,
   Plus,
+  Loader2,
 } from "lucide-react";
 import { IBlogCard } from "@/types/blog";
 import {
@@ -36,485 +37,611 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useSession } from "next-auth/react";
+import { useUserBlogs } from "@/hooks/useUserBlogs";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import { useFollowUser } from "@/hooks/useFollow";
+import { IUpdateUserData, IUserBadge } from "@/types/user";
+import { ProfileSkeleton } from "@/components/profile/ProfileSkeleton";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorState } from "@/components/state/ErrorState";
+import { EditProfileModal } from "@/components/profile/edit/EditProfileModal";
 
-// Mock user profile data
-const mockUserProfile = {
-  id: "user_12345",
-  username: "somchai_dev",
-  name: "สมชาย นักพัฒนา",
-  bio: "Full-stack Developer ที่หลงใหลในการสร้างสรรค์เว็บแอปพลิเคชันและเทคโนโลยีใหม่ๆ ชอบแบ่งปันความรู้และเรียนรู้สิ่งใหม่ตลอดเวลา 💻✨",
-  profileImage: "/images/avatars/somchai.jpg",
-  coverImage: "/images/covers/tech-workspace.jpg",
-  socialLinks: {
-    website: "https://somchai.dev",
-    github: "https://github.com/somchai-dev",
-    twitter: "https://twitter.com/somchai_dev",
-    linkedin: "https://linkedin.com/in/somchai-dev",
-    instagram: "https://instagram.com/somchai.codes",
-  },
-  location: "กรุงเทพมหานคร, ประเทศไทย",
-  jobTitle: "Senior Full-stack Developer",
-  company: "TechCorp Thailand",
-  education: "วิทยาการคอมพิวเตร์ จุฬาลงกรณ์มหาวิทยาลัย",
-  status: "active",
-  badge: "creator",
-  createdAt: new Date("2022-03-15T10:30:00Z"),
-  lastActiveAt: new Date("2024-01-15T14:20:00Z"),
-
-  // Private fields (จะแสดงเฉพาะเจ้าของ)
-  email: "somchai@example.com",
-  phone: "+66812345678",
-  birthDate: new Date("1995-08-22"),
-  settings: {
-    profileVisibility: "public",
-    showEmail: false,
-    showPhone: false,
-    allowComments: true,
-  },
-
-  // Stats
-  _count: {
-    blogs: 47,
-    followers: 2850,
-    following: 312,
-    blogLikes: 15420,
-    views: 89750,
-    comments: 1240,
-  },
-
-  // Analytics (เฉพาะเจ้าของ)
-  analytics: {
-    profileViews: 12580,
-    totalEngagement: 18690,
-    averageReadTime: 3.2,
-  },
+type ProfilePageProps = {
+  username: string;
 };
 
-// Mock user's blogs
-const mockUserBlogs = [
-  {
-    id: "1",
-    title: "Getting Started with Next.js 14 และ App Router",
-    slug: "getting-started-nextjs-14",
-    excerpt:
-      "เรียนรู้วิธีการใช้งาน Next.js 14 พร้อม App Router และฟีเจอร์ใหม่ๆ ที่น่าสนใจ",
-    coverImage: "",
-    published: true,
-    createdAt: new Date("2024-01-15"),
-    author: mockUserProfile,
-    _count: {
-      likes: 24,
-      comments: 8,
-    },
-    isLiked: false,
-  },
-  {
-    id: "2",
-    title: "TypeScript Tips & Tricks สำหรับ React Developer",
-    slug: "typescript-tips-react",
-    excerpt:
-      "เทคนิคการใช้งาน TypeScript กับ React ที่จะช่วยให้โค้ดของคุณปลอดภัยและบำรุงรักษาง่าย",
-    coverImage: "",
-    published: true,
-    createdAt: new Date("2024-01-10"),
-    author: mockUserProfile,
-    _count: {
-      likes: 32,
-      comments: 12,
-    },
-    isLiked: true,
-  },
-];
+export default function ProfilePage() {
+  const params = useParams<ProfilePageProps>();
 
-interface ProfilePageProps {
-  params: {
-    username: string;
+  const router = useRouter();
+
+  const { data: session } = useSession();
+  const [sortBy, setSortBy] = useState("latest");
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  // Custom Hooks
+  const { isFollowing, followerCount, isToggling, toggleFollow } =
+    useFollowUser(session?.user?.id || "", false, 0);
+
+  const {
+    // Data
+    blogs,
+    currentPage,
+    totalPages,
+    hasMore,
+    // Loading states
+    isLoadingBlogs,
+    isLoadingMore,
+    error: blogsError,
+    // Actions
+    fetchBlogs,
+    loadMoreBlogs,
+    resetBlogs,
+    refreshBlogs,
+  } = useUserBlogs(session?.user?.id || "");
+
+  const {
+    // Data
+    profile,
+    // Loading states
+    isLoading,
+    isUpdating,
+    error: profileError,
+    // Actions
+    updateProfile,
+    refreshProfile,
+    // Helper functions
+    isOwnProfile,
+  } = useUserProfile(params.username || "", {
+    onSuccess: (profileData) => {
+      console.log("Profile loaded successfully:", profileData.name);
+    },
+    onError: (error) => {
+      console.error("Profile loading failed:", error);
+    },
+    onUpdateSuccess: (updatedProfile) => {
+      console.log("Profile updated successfully:", updatedProfile.name);
+    },
+    onUpdateError: (error) => {
+      console.error("Profile update failed:", error);
+    },
+    autoFetch: true,
+  });
+  useEffect(() => {
+    if (isEditModalOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isEditModalOpen]);
+
+  // Effects
+  useEffect(() => {
+    if (params.username) {
+      // ไม่ต้อง call fetchProfile เพราะ useUserProfile จะ autoFetch
+      fetchBlogs();
+    }
+  }, [params.username, sortBy]);
+
+  useEffect(() => {
+    if (profile && isFollowing !== undefined) {
+      // อัพเดต follower count เมื่อมีการ follow/unfollow
+      refreshProfile();
+    }
+  }, [isFollowing]);
+
+  // Handlers
+  const handleFollowToggle = async () => {
+    if (!profile || !session?.user) return;
+    await toggleFollow();
   };
-}
 
-export default function ProfilePage({ params }: ProfilePageProps) {
-  const userProfile = mockUserProfile;
-  const userBlogs = mockUserBlogs;
-  const isOwnProfile = false; // จะต้องเช็คจาก auth
-  const isFollowing = false; // จะต้องเช็คจาก API
+  const handleLoadMore = () => {
+    if (hasMore && !isLoadingMore) {
+      loadMoreBlogs();
+    }
+  };
 
-  return (
-    <>
-      <MainNavbar />
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
-        <div className="max-w-6xl mx-auto px-4 py-8">
-          {/* Profile Header */}
-          <Card className="glass-card mb-8 border-0 shadow-xl">
-            <CardContent className="p-6 md:p-8">
-              <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
-                {/* Left: Avatar & Quick Actions */}
-                <div className="flex flex-col justify-evenly lg:items-start gap-4">
-                  <div className="relative mx-auto ">
-                    <div className="relative w-32 h-32 md:w-40 md:h-40">
-                      <Image
-                        src={userProfile.profileImage || "/default-avatar.png"}
-                        alt={userProfile.name}
-                        fill
-                        className="rounded-full border-4 border-white/80 shadow-lg object-cover"
-                      />
-                      {/* Online Status */}
-                      {userProfile.lastActiveAt && (
-                        <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 border-3 border-white rounded-full"></div>
-                      )}
-                      {/* Verification Badge */}
-                      {userProfile.isVerified && (
-                        <div className="absolute -top-1 -right-1 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                          <Check className="w-3 h-3 text-white" />
+  const handleSortChange = (value: string) => {
+    setSortBy(value);
+    resetBlogs();
+    // FIX
+    // fetchBlogs({ sortBy: value });
+  };
+
+  const handleEditProfile = async (formData: any) => {
+    try {
+      const socialLinks = {
+        twitter: formData.twitter || null,
+        github: formData.github || null,
+        website: formData.website || null,
+        instagram: formData.instagram || null,
+        facebook: formData.facebook || null,
+        youtube: formData.youtube || null,
+        linkedin: formData.linkedin || null,
+        tiktok: formData.tiktok || null,
+      };
+
+      // กรองออก empty values
+      const cleanedSocialLinks = Object.fromEntries(
+        Object.entries(socialLinks).filter(
+          ([_, value]) => value !== null && value !== ""
+        )
+      );
+
+      const updateData = {
+        name: formData.name,
+        bio: formData.bio || null,
+        location: formData.location || null,
+        jobTitle: formData.jobTitle || null,
+        company: formData.company || null,
+        socialLinks:
+          Object.keys(cleanedSocialLinks).length > 0
+            ? cleanedSocialLinks
+            : null,
+      } as IUpdateUserData;
+
+      const success = await updateProfile(updateData);
+      if (success) {
+        setIsEditModalOpen(false);
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error);
+    }
+  };
+
+  const handleStatClick = (
+    type: "followers" | "following" | "blogs" | "likes"
+  ) => {
+    router.push(`/profile/${params.username}/${type}`);
+  };
+
+  const handleCreateBlog = () => {
+    router.push("/blog/new");
+  };
+
+  // Loading State
+  if (isLoading) {
+    return (
+      <>
+        <MainNavbar />
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+          <div className="max-w-6xl mx-auto px-4 py-8">
+            <ProfileSkeleton />
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-8 w-48" />
+                <div className="flex items-center gap-4">
+                  <Skeleton className="h-6 w-20" />
+                  <Skeleton className="h-10 w-32" />
+                </div>
+              </div>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <BlogCardSkeleton key={i} />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Error State
+  if (profileError || blogsError) {
+    return (
+      <ErrorState
+        error={profileError || blogsError}
+        onRetry={() => {
+          if (profileError) refreshProfile();
+          if (blogsError) refreshBlogs();
+        }}
+      />
+    );
+  }
+
+  // Not Found
+  if (!profile && !blogs && !blogsError && !profileError) {
+    return notFound();
+  }
+  if (profile)
+    return (
+      <>
+        <MainNavbar />
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+          <div className="max-w-6xl mx-auto px-4 py-8">
+            {/* Profile Header */}
+            <Card className="glass-card mb-8 border-0 shadow-xl">
+              <CardContent className="p-6 md:p-8">
+                <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+                  {/* Left: Avatar & Quick Actions */}
+                  <div className="flex flex-col justify-evenly lg:items-start gap-4">
+                    <div className="relative mx-auto">
+                      <div className="relative w-32 h-32 md:w-40 md:h-40">
+                        <Image
+                          priority={false}
+                          src={profile.profileImage || "/default-avatar.png"}
+                          alt={profile.name}
+                          fill
+                          sizes="100%"
+                          className="rounded-full border-4 border-white/80 shadow-lg object-cover"
+                        />
+                        {/* Online Status */}
+                        {profile.lastActiveAt && (
+                          <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 border-3 border-white rounded-full"></div>
+                        )}
+                        {/* Verification Badge */}
+                        {profile.isVerified && (
+                          <div className="absolute -top-1 -right-1 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                            <Check className="w-3 h-3 text-white" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    {!isOwnProfile(session?.user?.username) && (
+                      <div className="mx-auto">
+                        <Button
+                          size="sm"
+                          onClick={handleFollowToggle}
+                          disabled={isToggling}
+                          className={`min-w-[100px] transition-all duration-200 ${
+                            isFollowing
+                              ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300"
+                              : "bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl hover:scale-105"
+                          }`}
+                        >
+                          {isToggling ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : isFollowing ? (
+                            ""
+                          ) : (
+                            <UserPlus className="w-4 h-4 mr-2" />
+                          )}
+                          {isFollowing ? "Following" : "Follow"}
+                        </Button>
+                      </div>
+                    )}
+
+                    {isOwnProfile(session?.user?.username) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="min-w-[120px]"
+                        onClick={() => setIsEditModalOpen(true)}
+                      >
+                        <Edit className="w-4 h-4 mr-2" />
+                        แก้ไขโปรไฟล์
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Center: Profile Info */}
+                  <div className="flex-1 space-y-4">
+                    <div className="text-center lg:text-left">
+                      <div className="flex items-center justify-center lg:justify-start gap-2 mb-2">
+                        <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">
+                          {profile.name}
+                        </h1>
+                        {profile.badge && (
+                          <span
+                            className={`px-2 py-1 text-xs font-medium rounded-full ${
+                              profile.badge === ("creator" as IUserBadge)
+                                ? "bg-purple-100 text-purple-700"
+                                : profile.badge === ("pro" as IUserBadge)
+                                ? "bg-yellow-100 text-yellow-700"
+                                : "bg-blue-100 text-blue-700"
+                            }`}
+                          >
+                            {profile.badge.toString().toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="text-lg text-slate-600 dark:text-slate-400 mb-2">
+                        @{profile.username}
+                      </p>
+
+                      {/* Job Title & Company */}
+                      {(profile.jobTitle || profile.company) && (
+                        <div className="flex items-center justify-center lg:justify-start gap-1 text-slate-600 dark:text-slate-400 mb-2">
+                          <Briefcase className="w-4 h-4" />
+                          <span>
+                            {profile.jobTitle}
+                            {profile.jobTitle && profile.company && " ที่ "}
+                            {profile.company}
+                          </span>
                         </div>
                       )}
                     </div>
-                  </div>
 
-                  {/* Action Buttons */}
-                  {!isOwnProfile && (
-                    <div className="mx-auto ">
-                      <Button
-                        size="sm"
-                        className={`min-w-[100px] transition-all duration-200 ${
-                          isFollowing
-                            ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300"
-                            : "bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl hover:scale-105"
-                        }`}
-                      >
-                        {isFollowing ? "" : <UserPlus className="w-4 h-4 mr-2" />}
-                        {isFollowing ? "Following" : "Follow"}
-                      </Button>
-                    </div>
-                  )}
+                    {profile.bio && (
+                      <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-center lg:text-left">
+                        {profile.bio}
+                      </p>
+                    )}
 
-                  {isOwnProfile && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="min-w-[120px]"
-                    >
-                      <Edit className="w-4 h-4 mr-2" />
-                      แก้ไขโปรไฟล์
-                    </Button>
-                  )}
-                </div>
+                    {/* Meta Info */}
+                    <div className="flex flex-wrap justify-center lg:justify-start gap-4 text-sm text-slate-600 dark:text-slate-400">
+                      {profile.location && (
+                        <div className="flex items-center gap-1">
+                          <MapPin className="w-4 h-4" />
+                          {profile.location}
+                        </div>
+                      )}
 
-                {/* Center: Profile Info */}
-                <div className="flex-1 space-y-4">
-                  <div className="text-center lg:text-left">
-                    <div className="flex items-center justify-center lg:justify-start gap-2 mb-2">
-                      <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">
-                        {userProfile.name}
-                      </h1>
-                      {userProfile.badge && (
-                        <span
-                          className={`px-2 py-1 text-xs font-medium rounded-full ${
-                            userProfile.badge === "creator"
-                              ? "bg-purple-100 text-purple-700"
-                              : userProfile.badge === "pro"
-                              ? "bg-yellow-100 text-yellow-700"
-                              : "bg-blue-100 text-blue-700"
-                          }`}
-                        >
-                          {userProfile.badge.toUpperCase()}
-                        </span>
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
+                        เข้าร่วมเมื่อ {formatDate(new Date(profile.createdAt))}
+                      </div>
+
+                      {profile.lastActiveAt && (
+                        <div className="flex items-center gap-1 text-green-600">
+                          <div className="w-2 h-2 bg-green-500 rounded-full" />
+                          ออนไลน์ล่าสุด{" "}
+                          {formatDistanceToNow(new Date(profile.lastActiveAt))}
+                        </div>
                       )}
                     </div>
 
-                    <p className="text-lg text-slate-600 dark:text-slate-400 mb-2">
-                      @{userProfile.username}
-                    </p>
-
-                    {/* Job Title & Company */}
-                    {(userProfile.jobTitle || userProfile.company) && (
-                      <div className="flex items-center justify-center lg:justify-start gap-1 text-slate-600 dark:text-slate-400 mb-2">
-                        <Briefcase className="w-4 h-4" />
-                        <span>
-                          {userProfile.jobTitle}
-                          {userProfile.jobTitle &&
-                            userProfile.company &&
-                            " ที่ "}
-                          {userProfile.company}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  {userProfile.bio && (
-                    <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-center lg:text-left">
-                      {userProfile.bio}
-                    </p>
-                  )}
-
-                  {/* Meta Info */}
-                  <div className="flex flex-wrap justify-center lg:justify-start gap-4 text-sm text-slate-600 dark:text-slate-400">
-                    {userProfile.location && (
-                      <div className="flex items-center gap-1">
-                        <MapPin className="w-4 h-4" />
-                        {userProfile.location}
-                      </div>
-                    )}
-
-                    <div className="flex items-center gap-1">
-                      <Calendar className="w-4 h-4" />
-                      เข้าร่วมเมื่อ {formatDate(userProfile.createdAt)}
-                    </div>
-
-                    {userProfile.lastActiveAt && (
-                      <div className="flex items-center gap-1 text-green-600">
-                        <div className="w-2 h-2 bg-green-500 rounded-full" />
-                        ออนไลน์ล่าสุด{" "}
-                        {formatDistanceToNow(userProfile.lastActiveAt)}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Social Links */}
-                  {userProfile.socialLinks &&
-                    Object.keys(userProfile.socialLinks).length > 0 && (
-                      <div className="flex flex-wrap justify-center lg:justify-start gap-2">
-                        {userProfile.socialLinks.website && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            asChild
-                            className="hover:bg-slate-50"
-                          >
-                            <a
-                              href={userProfile.socialLinks.website}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                    {/* Social Links */}
+                    {profile.socialLinks &&
+                      Object.keys(profile.socialLinks).length > 0 && (
+                        <div className="flex flex-wrap justify-center lg:justify-start gap-2">
+                          {profile.socialLinks.website && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              asChild
+                              className="hover:bg-slate-50"
                             >
-                              <Globe className="w-4 h-4 mr-2" />
-                              Website
-                            </a>
-                          </Button>
-                        )}
+                              <a
+                                href={profile.socialLinks.website}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                <Globe className="w-4 h-4 mr-2" />
+                                Website
+                              </a>
+                            </Button>
+                          )}
 
-                        {userProfile.socialLinks.github && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            asChild
-                            className="hover:bg-slate-50"
-                          >
-                            <a
-                              href={userProfile.socialLinks.github}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                          {profile.socialLinks.github && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              asChild
+                              className="hover:bg-slate-50"
                             >
-                              <Github className="w-4 h-4 mr-2" />
-                              GitHub
-                            </a>
-                          </Button>
-                        )}
+                              <a
+                                href={profile.socialLinks.github}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                <Github className="w-4 h-4 mr-2" />
+                                GitHub
+                              </a>
+                            </Button>
+                          )}
 
-                        {userProfile.socialLinks.twitter && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            asChild
-                            className="hover:bg-slate-50"
-                          >
-                            <a
-                              href={userProfile.socialLinks.twitter}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                          {profile.socialLinks.twitter && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              asChild
+                              className="hover:bg-slate-50"
                             >
-                              <Twitter className="w-4 h-4 mr-2" />
-                              Twitter
-                            </a>
-                          </Button>
-                        )}
+                              <a
+                                href={profile.socialLinks.twitter}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                <Twitter className="w-4 h-4 mr-2" />
+                                Twitter
+                              </a>
+                            </Button>
+                          )}
 
-                        {userProfile.socialLinks.linkedin && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            asChild
-                            className="hover:bg-slate-50"
-                          >
-                            <a
-                              href={userProfile.socialLinks.linkedin}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                          {profile.socialLinks.linkedin && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              asChild
+                              className="hover:bg-slate-50"
                             >
-                              <Linkedin className="w-4 h-4 mr-2" />
-                              LinkedIn
-                            </a>
-                          </Button>
-                        )}
+                              <a
+                                href={profile.socialLinks.linkedin}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                <Linkedin className="w-4 h-4 mr-2" />
+                                LinkedIn
+                              </a>
+                            </Button>
+                          )}
 
-                        {userProfile.socialLinks.instagram && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            asChild
-                            className="hover:bg-slate-50"
-                          >
-                            <a
-                              href={userProfile.socialLinks.instagram}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                          {profile.socialLinks.instagram && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              asChild
+                              className="hover:bg-slate-50"
                             >
-                              <Instagram className="w-4 h-4 mr-2" />
-                              Instagram
-                            </a>
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                </div>
-
-                {/* Right: Stats */}
-                <div className="flex lg:flex-col gap-6 lg:gap-4 justify-center lg:justify-start lg:min-w-[120px]">
-                  <div className="text-center group cursor-pointer">
-                    <div className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors">
-                      {userProfile._count.blogs.toLocaleString()}
-                    </div>
-                    <div className="text-xs md:text-sm text-slate-500">
-                      โพสต์
-                    </div>
+                              <a
+                                href={profile.socialLinks.instagram}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                <Instagram className="w-4 h-4 mr-2" />
+                                Instagram
+                              </a>
+                            </Button>
+                          )}
+                        </div>
+                      )}
                   </div>
 
-                  <div className="text-center group cursor-pointer">
-                    <div className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors">
-                      {userProfile._count.followers.toLocaleString()}
-                    </div>
-                    <div className="text-xs md:text-sm text-slate-500">
-                      Followers
-                    </div>
-                  </div>
-
-                  <div className="text-center group cursor-pointer">
-                    <div className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors">
-                      {userProfile._count.following.toLocaleString()}
-                    </div>
-                    <div className="text-xs md:text-sm text-slate-500">
-                      Following
-                    </div>
-                  </div>
-
-                  <div className="text-center group cursor-pointer">
-                    <div className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors">
-                      {userProfile._count.blogLikes.toLocaleString()}
-                    </div>
-                    <div className="text-xs md:text-sm text-slate-500">
-                      Likes
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Analytics Bar (เฉพาะเจ้าของ) */}
-              {isOwnProfile && userProfile.analytics && (
-                <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
-                  <div className="grid grid-cols-3 gap-4 text-center">
-                    <div>
-                      <div className="text-lg font-semibold text-blue-600">
-                        {userProfile.analytics.profileViews.toLocaleString()}
-                      </div>
-                      <div className="text-xs text-slate-500">
-                        Profile Views
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-lg font-semibold text-green-600">
-                        {userProfile.analytics.totalEngagement.toLocaleString()}
-                      </div>
-                      <div className="text-xs text-slate-500">
-                        Total Engagement
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-lg font-semibold text-purple-600">
-                        {userProfile.analytics.averageReadTime}m
-                      </div>
-                      <div className="text-xs text-slate-500">
-                        Avg. Read Time
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Blogs Section */}
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold flex items-center gap-2 text-slate-900 dark:text-white">
-                <FileText className="w-6 h-6" />
-                บล็อกของ {userProfile.name}
-              </h2>
-              <div className="flex items-center gap-4">
-                <div className="text-sm text-slate-500">
-                  {userBlogs.length} โพสต์
-                </div>
-                {/* Filter/Sort options */}
-                <Select defaultValue="latest">
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="latest">ล่าสุด</SelectItem>
-                    <SelectItem value="popular">ยอดนิยม</SelectItem>
-                    <SelectItem value="oldest">เก่าที่สุด</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {userBlogs.length > 0 ? (
-              <>
-                {/* Blogs Grid */}
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <Suspense fallback={<BlogCardSkeleton />}>
-                    {userBlogs.map((blog) => (
-                      <BlogCard key={blog.id} blog={blog as IBlogCard} />
-                    ))}
-                  </Suspense>
-                </div>
-
-                {/* Load More */}
-                {userBlogs.length >= 6 && (
-                  <div className="text-center mt-12">
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      className="glass-card hover:bg-slate-50"
+                  {/* Right: Stats */}
+                  <div className="flex lg:flex-col gap-6 lg:gap-4 justify-center lg:justify-start lg:min-w-[120px]">
+                    <div
+                      className="text-center group cursor-pointer"
+                      onClick={() => handleStatClick("blogs")}
                     >
-                      <RefreshCw className="w-4 h-4 mr-2" />
-                      โหลดเพิ่มเติม
-                    </Button>
+                      <div className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors">
+                        {profile._count.blogs.toLocaleString()}
+                      </div>
+                      <div className="text-xs md:text-sm text-slate-500">
+                        โพสต์
+                      </div>
+                    </div>
+
+                    <div
+                      className="text-center group cursor-pointer"
+                      onClick={() => handleStatClick("followers")}
+                    >
+                      <div className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors">
+                        {followerCount ||
+                          profile._count.followers.toLocaleString()}
+                      </div>
+                      <div className="text-xs md:text-sm text-slate-500">
+                        Followers
+                      </div>
+                    </div>
+
+                    <div
+                      className="text-center group cursor-pointer"
+                      onClick={() => handleStatClick("following")}
+                    >
+                      <div className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors">
+                        {profile._count.following.toLocaleString()}
+                      </div>
+                      <div className="text-xs md:text-sm text-slate-500">
+                        Following
+                      </div>
+                    </div>
+
+                    <div
+                      className="text-center group cursor-pointer"
+                      onClick={() => handleStatClick("likes")}
+                    >
+                      <div className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors">
+                        {profile._count.blogLikes.toLocaleString()}
+                      </div>
+                      <div className="text-xs md:text-sm text-slate-500">
+                        Likes
+                      </div>
+                    </div>
                   </div>
-                )}
-              </>
-            ) : (
-              // Empty State
-              <Card className="glass-card border-0">
-                <CardContent className="p-12 text-center">
-                  <div className="w-20 h-20 mx-auto mb-6 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center">
-                    <FileText className="w-10 h-10 text-slate-400" />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Blogs Section */}
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold flex items-center gap-2 text-slate-900 dark:text-white">
+                  <FileText className="w-6 h-6" />
+                  บล็อกของ {profile.name}
+                </h2>
+                <div className="flex items-center gap-4">
+                  <div className="text-sm text-slate-500">
+                    {blogs.length} โพสต์
                   </div>
-                  <h3 className="text-xl font-semibold mb-2 text-slate-900 dark:text-white">
-                    ยังไม่มีบล็อก
-                  </h3>
-                  <p className="text-slate-500 mb-6">
-                    {userProfile.name} ยังไม่ได้เขียนบล็อกใดๆ
-                  </p>
-                  {isOwnProfile && (
-                    <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-                      <Plus className="w-4 h-4 mr-2" />
-                      เขียนบล็อกแรก
-                    </Button>
+                  {/* Filter/Sort options */}
+                  <Select value={sortBy} onValueChange={handleSortChange}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="latest">ล่าสุด</SelectItem>
+                      <SelectItem value="popular">ยอดนิยม</SelectItem>
+                      <SelectItem value="oldest">เก่าที่สุด</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {isLoadingBlogs ? (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <BlogCardSkeleton key={i} />
+                  ))}
+                </div>
+              ) : blogs.length > 0 ? (
+                <>
+                  {/* Blogs Grid */}
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <Suspense fallback={<BlogCardSkeleton />}>
+                      {blogs.map((blog) => (
+                        <BlogCard key={blog.id} blog={blog as IBlogCard} />
+                      ))}
+                    </Suspense>
+                  </div>
+
+                  {/* Load More */}
+                  {hasMore && (
+                    <div className="text-center mt-12">
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        onClick={handleLoadMore}
+                        disabled={isLoadingMore}
+                        className="glass-card hover:bg-slate-50"
+                      >
+                        {isLoadingMore ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <RefreshCw className="w-4 h-4 mr-2" />
+                        )}
+                        {isLoadingMore ? "กำลังโหลด..." : "โหลดเพิ่มเติม"}
+                      </Button>
+                    </div>
                   )}
-                </CardContent>
-              </Card>
-            )}
+                </>
+              ) : (
+                // Empty State
+                <Card className="glass-card border-0">
+                  <CardContent className="p-12 text-center">
+                    <div className="w-20 h-20 mx-auto mb-6 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center">
+                      <FileText className="w-10 h-10 text-slate-400" />
+                    </div>
+                    <h3 className="text-xl font-semibold mb-2 text-slate-900 dark:text-white">
+                      ยังไม่มีบล็อก
+                    </h3>
+                    <p className="text-slate-500 mb-6">
+                      {profile.name} ยังไม่ได้เขียนบล็อกใดๆ
+                    </p>
+                    {isOwnProfile(session?.user?.username) && (
+                      <Button
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                        onClick={handleCreateBlog}
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        เขียนบล็อกแรก
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-    </>
-  );
+
+        {/* Edit Profile Modal */}
+        <EditProfileModal
+          profile={profile}
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          onSave={handleEditProfile}
+          isUpdating={isUpdating}
+        />
+      </>
+    );
 }

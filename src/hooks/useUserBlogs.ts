@@ -1,6 +1,6 @@
-import { getUserBlogs } from '@/api/user';
-import { IBlogCard } from '@/types/blog';
-import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
+import { getUserBlogs } from "@/api/user";
+import { IBlogCard } from "@/types/blog";
+import { useState, useCallback, useRef, useMemo, useEffect } from "react";
 
 // ปรับปรุง hook
 export const useUserBlogs = (userId: string, options = {}) => {
@@ -17,7 +17,10 @@ export const useUserBlogs = (userId: string, options = {}) => {
   const abortControllerRef = useRef<AbortController | null>(null);
 
   // Memoize options เพื่อป้องกัน unnecessary re-renders
-  const memoizedOptions: Record<string, any> = useMemo(() => options, [JSON.stringify(options)]);
+  const memoizedOptions: Record<string, any> = useMemo(
+    () => options,
+    [options]
+  );
 
   // ดึงข้อมูล blogs (ปรับปรุง)
   const fetchBlogs = useCallback(
@@ -26,7 +29,7 @@ export const useUserBlogs = (userId: string, options = {}) => {
 
       // ป้องกัน concurrent requests
       if (loadingRef.current) {
-        console.warn('Request already in progress');
+        console.warn("Request already in progress");
         return false;
       }
 
@@ -48,9 +51,9 @@ export const useUserBlogs = (userId: string, options = {}) => {
       }
 
       try {
-        const response = await getUserBlogs(userId, { 
-          page, 
-          limit
+        const response = await getUserBlogs(userId, {
+          page,
+          limit,
           // หมายเหตุ: signal ต้องเพิ่มใน getUserBlogs function
         });
 
@@ -67,8 +70,10 @@ export const useUserBlogs = (userId: string, options = {}) => {
           if (append) {
             setBlogs((prev) => {
               // ป้องกันข้อมูลซ้ำ (optional: ตรวจสอบ ID)
-              const existingIds = new Set(prev.map(blog => blog.id));
-              const uniqueNewBlogs = newBlogs.filter(blog => !existingIds.has(blog.id));
+              const existingIds = new Set(prev.map((blog) => blog.id));
+              const uniqueNewBlogs = newBlogs.filter(
+                (blog) => !existingIds.has(blog.id)
+              );
               return [...prev, ...uniqueNewBlogs];
             });
           } else {
@@ -88,25 +93,26 @@ export const useUserBlogs = (userId: string, options = {}) => {
         }
       } catch (error: any) {
         // ไม่แสดง error ถ้า request ถูก abort
-        if (error?.name === 'AbortError') {
+        if (error?.name === "AbortError") {
           return false;
         }
 
-        const errorMessage = error instanceof Error ? error.message : "Error fetching blogs";
-        
+        const errorMessage =
+          error instanceof Error ? error.message : "Error fetching blogs";
+
         if (!append) {
           setError(errorMessage);
         } else {
           // สำหรับ loadMore error อาจแสดง toast แทน
-          console.error('Load more error:', errorMessage);
+          console.error("Load more error:", errorMessage);
         }
-        
+
         memoizedOptions?.onError?.(errorMessage);
         return false;
       } finally {
         loadingRef.current = false;
         abortControllerRef.current = null;
-        
+
         if (append) {
           setIsLoadingMore(false);
         } else {
@@ -125,15 +131,22 @@ export const useUserBlogs = (userId: string, options = {}) => {
     }
 
     const success = await fetchBlogs(currentPage + 1, 10, true);
-    
+
     // จัดการ error state สำหรับ loadMore
     if (!success) {
       // อาจแสดง toast error หรือ retry button
-      memoizedOptions?.onLoadMoreError?.('Failed to load more blogs');
+      memoizedOptions?.onLoadMoreError?.("Failed to load more blogs");
     }
-    
+
     return success;
-  }, [hasMore, isLoadingBlogs, isLoadingMore, currentPage, fetchBlogs, memoizedOptions]);
+  }, [
+    hasMore,
+    isLoadingBlogs,
+    isLoadingMore,
+    currentPage,
+    fetchBlogs,
+    memoizedOptions,
+  ]);
 
   // รีเซ็ตข้อมูล
   const resetBlogs = useCallback(() => {
@@ -142,7 +155,7 @@ export const useUserBlogs = (userId: string, options = {}) => {
     setTotalPages(0);
     setHasMore(false);
     setError(null);
-    
+
     // Cancel any ongoing requests
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -171,18 +184,18 @@ export const useUserBlogs = (userId: string, options = {}) => {
     currentPage,
     totalPages,
     hasMore,
-    
+
     // Loading states
     isLoadingBlogs,
     isLoadingMore,
     error,
-    
+
     // Actions
     fetchBlogs,
     loadMoreBlogs,
     resetBlogs,
     refreshBlogs,
-    
+
     // Helper states
     isEmpty: blogs.length === 0 && !isLoadingBlogs,
     isFirstLoad: isLoadingBlogs && currentPage === 1,

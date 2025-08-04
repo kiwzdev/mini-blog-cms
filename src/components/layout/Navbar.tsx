@@ -74,7 +74,7 @@ export default function MainNavbar() {
                   <ul className="py-2 text-sm text-gray-700 dark:text-gray-100">
                     <li>
                       <Link
-                        href="/profile"
+                        href={`/profile/${session.user.username}`}
                         className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
                       >
                         My Profile
@@ -131,7 +131,7 @@ export default function MainNavbar() {
         <div className="md:hidden mt-4 space-y-2 text-center">
           {session && (
             <Link
-              href="/profile"
+              href={`/profile/${session.user.username}`}
               className="block text-gray-700 dark:text-gray-100 hover:text-blue-500 text-2xl py-4"
             >
               My Profile
