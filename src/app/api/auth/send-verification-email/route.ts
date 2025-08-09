@@ -3,8 +3,7 @@ import { sendVerificationEmail } from "@/lib/email/sendVerificationEmail";
 import { v4 as uuidv4 } from "uuid";
 import { PrismaClient } from "@prisma/client";
 import { createErrorResponse, createSuccessResponse } from "@/lib/api-response";
-
-const prisma = new PrismaClient();
+import prisma from "@/lib/db";
 
 // Send Verification Email API
 export async function POST(req: Request) {

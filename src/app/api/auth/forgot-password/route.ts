@@ -6,8 +6,7 @@ import { sendPasswordResetEmail } from "@/lib/email/sendResetToken"; // You'll n
 import { PrismaClient } from "@prisma/client";
 import { createSuccessResponse } from "@/lib/api-response";
 import { createErrorResponse } from "@/lib/api-response";
-
-const prisma = new PrismaClient();
+import prisma from "@/lib/db";
 
 // Password Reset Request API
 export async function POST(req: NextRequest) {

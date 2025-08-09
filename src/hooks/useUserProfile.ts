@@ -1,6 +1,8 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { getUserProfile, updateUser } from "@/api/user";
-import { IUpdateUserData, IUserProfile } from "@/types/user";
+import { IUpdateProfileData, IUserProfile } from "@/types/user";
+import toast from "react-hot-toast";
+import { createUpdatedUserFormData } from "@/helpers/formData";
 
 interface UseUserProfileOptions {
   onSuccess?: (profile: IUserProfile) => void;
@@ -19,10 +21,6 @@ export const useUserProfile = (
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // ป้องกัน concurrent requests
-  const loadingRef = useRef<boolean>(false);
-  const abortControllerRef = useRef<AbortController | null>(null);
-
   const {
     onSuccess,
     onError,
@@ -35,29 +33,11 @@ export const useUserProfile = (
   const fetchProfile = useCallback(async () => {
     if (!username) return false;
 
-    // ป้องกัน concurrent requests
-    if (loadingRef.current) {
-      console.warn("Profile request already in progress");
-      return false;
-    }
-
-    // Cancel previous request
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-
-    abortControllerRef.current = new AbortController();
-    loadingRef.current = true;
     setIsLoading(true);
     setError(null);
 
     try {
       const response = await getUserProfile(username);
-
-      // ตรวจสอบว่า request ถูก abort หรือไม่
-      if (abortControllerRef.current?.signal.aborted) {
-        return false;
-      }
 
       if (response.success) {
         const profileData = response.data as IUserProfile;
@@ -67,38 +47,45 @@ export const useUserProfile = (
       } else {
         throw new Error(response.error?.message || "Failed to fetch profile");
       }
-    } catch (error: any) {
-      if (error?.name === "AbortError") {
-        return false;
-      }
-
+    } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Error fetching profile";
       setError(errorMessage);
       onError?.(errorMessage);
       return false;
     } finally {
-      loadingRef.current = false;
-      abortControllerRef.current = null;
       setIsLoading(false);
     }
   }, [username, onSuccess, onError]);
 
-  // อัปเดทโปรไฟล์
   const updateProfile = useCallback(
-    async (updateData: IUpdateUserData) => {
+    async (updateData: IUpdateProfileData) => {
       if (!username || !profile) return false;
 
       setIsUpdating(true);
       setError(null);
 
       try {
-        const response = await updateUser(username, updateData);
+        toast.loading("Updating profile...", { id: "updateProfile" });
+
+        const updatedFormData = createUpdatedUserFormData(updateData);
+
+        // ส่ง publicId เก่าเพื่อลบรูปเก่า (ถ้ามีรูปใหม่)
+        if (updateData.profileImage instanceof File && profile.profileImage) {
+          updatedFormData.append("oldProfileImage", profile.profileImage);
+        }
+
+        // เรียก API ที่รับ FormData
+        const response = await updateUser(username, updatedFormData);
 
         if (response.success) {
           const updatedProfile = response.data as IUserProfile;
           setProfile(updatedProfile);
           onUpdateSuccess?.(updatedProfile);
+
+          toast.success("Profile updated successfully!", {
+            id: "updateProfile",
+          });
           return true;
         } else {
           throw new Error(
@@ -110,6 +97,8 @@ export const useUserProfile = (
           error instanceof Error ? error.message : "Error updating profile";
         setError(errorMessage);
         onUpdateError?.(errorMessage);
+
+        toast.error(errorMessage, { id: "updateProfile" });
         return false;
       } finally {
         setIsUpdating(false);
@@ -127,12 +116,6 @@ export const useUserProfile = (
   const resetProfile = useCallback(() => {
     setProfile(null);
     setError(null);
-
-    // Cancel ongoing requests
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    loadingRef.current = false;
   }, []);
 
   // Auto fetch เมื่อ username เปลี่ยน
@@ -140,13 +123,6 @@ export const useUserProfile = (
     if (autoFetch && username) {
       fetchProfile();
     }
-
-    return () => {
-      // Cleanup on unmount หรือ username เปลี่ยน
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-    };
   }, [username, autoFetch]);
 
   // Helper functions

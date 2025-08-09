@@ -12,6 +12,7 @@ import { getImageUrl } from "@/lib/image";
 import { useBlogLike } from "@/hooks/useLike";
 import { useSession } from "next-auth/react";
 import { LikeButton } from "./LikeButton";
+import { ShareButton } from "./ShareButton";
 
 export function BlogContent({ blog }: { blog: IBlog }) {
   const { data: session } = useSession();
@@ -79,8 +80,9 @@ export function BlogContent({ blog }: { blog: IBlog }) {
             <div className="flex items-center gap-2">
               <Image
                 src={
-                  blog.author.profileImage ||
-                  process.env.NEXT_PUBLIC_DEFAULT_POST_IMAGE!
+                  blog.author.profileImage
+                    ? getImageUrl(blog.author.profileImage)
+                    : process.env.NEXT_PUBLIC_DEFAULT_POST_IMAGE!
                 }
                 alt={blog.author.name || process.env.NEXT_PUBLIC_DEFAULT_NAME!}
                 width={40}
@@ -97,7 +99,7 @@ export function BlogContent({ blog }: { blog: IBlog }) {
 
             <div className="flex items-center gap-1">
               <Eye className="w-4 h-4" />
-              1.2k views
+              {blog._count?.views || 0} ครั้ง
             </div>
           </div>
 
@@ -110,10 +112,7 @@ export function BlogContent({ blog }: { blog: IBlog }) {
               toggleLike={toggleLike}
               size="md"
             />
-            <Button variant="outline" size="sm">
-              <Share2 className="w-4 h-4 mr-2" />
-              แชร์
-            </Button>
+            <ShareButton url={window.location.href} title={blog.title} />
           </div>
         </div>
 

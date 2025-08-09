@@ -19,6 +19,7 @@ export interface IBlogCard {
   _count?: {
     comments: number;
     likes: number;
+    views: number;
   };
 }
 

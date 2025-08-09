@@ -48,7 +48,7 @@ model User {
   // Social Links - เก็บเป็น JSON
   socialLinks Json? // { twitter: "", github: "", linkedin: "", etc. }
   // Settings - เก็บเป็น JSON  
-  settings Json? // { profileVisibility: "public", showEmail: false, etc. }
+  settings    Json? // { profileVisibility: "public", showEmail: false, etc. }
 
   accounts            Account[]
   blogs               Blog[]
@@ -100,6 +100,9 @@ model Blog {
   comments Comment[]
   likes    BlogLike[]
 
+  @@index([published, createdAt(sort: Desc)], name: "blog_list_idx") // สำหรับ blogs query
+  @@index([authorId, published, createdAt(sort: Desc)], name: "blog_author_idx") // blogs's author query
+  
   @@map("blogs")
 }
 
@@ -130,7 +133,7 @@ model BlogLike {
   blog Blog @relation(fields: [blogId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([blogId, userId])
+  @@index([blogId], name: "blog_like_blog_idx")
   @@map("blog_likes")
 }
 

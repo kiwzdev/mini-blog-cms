@@ -9,37 +9,65 @@ export async function middleware(req: NextRequest) {
 
   console.log("user", user?.email);
 
-  // // Get the pathname of the request
-  // const { pathname } = req.nextUrl;
+  // Get the pathname of the request
+  const { pathname } = req.nextUrl;
 
-  // // Default redirect paths (matching the hook's defaults)
-  // const redirectIfAuthenticatedTo = "/todos";
-  // const redirectIfUnauthenticatedTo = "/auth/sign-in";
+  // Configuration
+  const config = {
+    // Paths that require authentication
+    protectedPaths: [
+      "/profile",
+    ],
+    
+    // Paths that require admin role
+    adminPaths: [
+      "/admin"
+    ],
+    
+    // Auth-related paths (should redirect if already authenticated)
+    authPaths: [
+      "/auth/sign-in",
+      "/auth/sign-up"
+    ],
+    
+    // Default redirect destinations
+    redirectIfAuthenticatedTo: "/",
+    redirectIfUnauthenticatedTo: "/auth/sign-in"
+  };
 
-  // // If user is authenticated and trying to access auth pages, redirect to authenticated page
-  // if (user && (pathname === "/auth/sign-in" || pathname === "/auth/sign-up")) {
-  //   const redirectUrl = new URL(redirectIfAuthenticatedTo, req.url);
-  //   return NextResponse.redirect(redirectUrl);
-  // }
+  // Helper function to check if path matches any pattern
+  const isPathMatch = (paths: string[], currentPath: string): boolean => {
+    return paths.some(path => {
+      // Exact match
+      if (path === currentPath) return true;
+      // Prefix match for nested paths (e.g., /admin matches /admin/users)
+      if (currentPath.startsWith(path + "/")) return true;
+      return false;
+    });
+  };
 
-  // // If user is unauthenticated and trying to access protected pages, redirect to auth
-  // if (
-  //   !user &&
-  //   pathname !== redirectIfUnauthenticatedTo &&
-  //   pathname !== "/auth/sign-up" &&
-  //   pathname !== "/auth/sign-in"
-  // ) {
-  //   const redirectUrl = new URL(redirectIfUnauthenticatedTo, req.url);
-  //   return NextResponse.redirect(redirectUrl);
-  // }
+  // If user is authenticated and trying to access auth pages, redirect to authenticated page
+  if (user && isPathMatch(config.authPaths, pathname)) {
+    const redirectUrl = new URL(config.redirectIfAuthenticatedTo, req.url);
+    return NextResponse.redirect(redirectUrl);
+  }
 
-  // // Role-based access control for admin routes
-  // if (pathname.startsWith("/admin")) {
-  //   if (user?.role !== "admin") {
-  //     const redirectUrl = new URL(redirectIfAuthenticatedTo, req.url);
-  //     return NextResponse.redirect(redirectUrl);
-  //   }
-  // }
+  // Check if current path requires authentication
+  const requiresAuth = isPathMatch(config.protectedPaths, pathname);
+  
+  // If user is unauthenticated and trying to access protected pages, redirect to auth
+  if (!user && requiresAuth) {
+    const redirectUrl = new URL(config.redirectIfUnauthenticatedTo, req.url);
+    return NextResponse.redirect(redirectUrl);
+  }
+
+  // Role-based access control for admin routes
+  if (isPathMatch(config.adminPaths, pathname)) {
+    if (user?.role !== "admin") {
+      const redirectUrl = new URL(config.redirectIfAuthenticatedTo, req.url);
+      return NextResponse.redirect(redirectUrl);
+    }
+  }
 
   return NextResponse.next();
 }

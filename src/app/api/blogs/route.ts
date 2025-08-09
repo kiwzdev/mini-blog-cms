@@ -9,12 +9,10 @@ import { createErrorResponse, createSuccessResponse } from "@/lib/api-response";
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get("userId");
     const limit = parseInt(searchParams.get("limit") || "10");
     const page = parseInt(searchParams.get("page") || "1");
-
     const skip = (page - 1) * limit;
 
     const whereClause = {
@@ -22,48 +20,58 @@ export async function GET(request: NextRequest) {
       ...(userId && { authorId: userId }),
     };
 
-    const blogs = await prisma.blog.findMany({
-      where: whereClause,
-      skip,
-      take: limit,
-      orderBy: { createdAt: "desc" },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            profileImage: true,
-            username: true,
+    // 1. ใช้ Promise.all เพื่อ parallel queries
+    const [blogs, total] = await Promise.all([
+      prisma.blog.findMany({
+        where: whereClause,
+        skip,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          excerpt: true,
+          coverImage: true,
+          createdAt: true,
+          category: true,
+          author: {
+            select: {
+              id: true,
+              name: true,
+              profileImage: true,
+              username: true,
+            },
+          },
+          _count: {
+            select: {
+              comments: true,
+              likes: true,
+            },
           },
         },
-        // ดึงข้อมูล likes เสมอเพื่อตรวจสอบ isLiked
-        likes: session?.user?.id
-          ? {
-              where: {
-                userId: session.user.id,
-              },
-              select: {
-                id: true,
-              },
-            }
-          : false,
-        _count: {
-          select: {
-            comments: true,
-            likes: true,
-          },
-        },
-      },
-    });
+      }),
+      prisma.blog.count({ where: whereClause })
+    ]);
 
-    // เพิ่ม isLiked ให้กับแต่ละ blog
+    // 2. แยก query likes ถ้า user login
+    let likedBlogIds: string[] = [];
+    if (session?.user?.id && blogs.length > 0) {
+      const likes = await prisma.blogLike.findMany({
+        where: {
+          userId: session.user.id,
+          blogId: { in: blogs.map(blog => blog.id) }
+        },
+        select: { blogId: true }
+      });
+      likedBlogIds = likes.map(like => like.blogId);
+    }
+
+    // 3. Map isLiked ให้กับ blogs
     const blogsWithLikeStatus = blogs.map((blog) => ({
       ...blog,
-      isLiked: session?.user?.id ? blog.likes.length > 0 : false,
-      likes: undefined, // ลบ likes array ออกเพื่อไม่ให้ response ใหญ่เกินไป
+      isLiked: likedBlogIds.includes(blog.id),
     }));
-
-    const total = await prisma.blog.count({ where: whereClause });
 
     return createSuccessResponse({
       data: {
@@ -85,6 +93,12 @@ export async function GET(request: NextRequest) {
     });
   }
 }
+// -- สำหรับ blogs query
+// CREATE INDEX idx_blogs_published_created ON blogs(published, createdAt DESC);
+// CREATE INDEX idx_blogs_author_published ON blogs(authorId, published, createdAt DESC);
+
+// -- สำหรับ likes query
+// CREATE INDEX idx_likes_user_blog ON likes(userId, blogId);
 
 // POST /api/blogs - Create new blog
 export async function POST(request: NextRequest) {

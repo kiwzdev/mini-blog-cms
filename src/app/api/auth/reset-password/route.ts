@@ -3,8 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
 import { createErrorResponse, createSuccessResponse } from "@/lib/api-response";
-
-const prisma = new PrismaClient();
+import prisma from "@/lib/db";
 
 // Password Reset Confirm API
 export async function POST(req: NextRequest) {

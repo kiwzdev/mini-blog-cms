@@ -19,7 +19,7 @@ export const getCloudinaryUrl = (
 
   if (!publicId) {
     // ส่งคืน URL ของภาพสำรองหรือ null หากไม่มี publicId
-    return "https://path.to/your/default/placeholder-image.png";
+    return "/public/images/default-avatar.jpg";
   }
 
   const transformations: string[] = [];
@@ -48,11 +48,18 @@ export const getCloudinaryUrl = (
 
 export function extractPublicIdFromUrl(url: string): string | null {
   try {
-    const parts = new URL(url).pathname.split("/");
-    const folder = parts[5]; // todo-app
-    const fileWithExt = parts[6]; // xxxx.jpg
-    const filename = fileWithExt.split(".")[0]; // xxxx
-    return `${folder}/${filename}`;
+    // URL pattern: https://res.cloudinary.com/dqwhrddsv/image/upload/mini-blog/profiles/xmbw7bdibx5b1dsjdxo0
+    const urlObj = new URL(url);
+    const pathname = urlObj.pathname; // /dqwhrddsv/image/upload/mini-blog/profiles/xmbw7bdibx5b1dsjdxo0
+
+    // หา "/upload/" และเอาส่วนหลังออกมา
+    const uploadIndex = pathname.indexOf("/upload/");
+    if (uploadIndex === -1) return null;
+
+    // ตัดจาก "/upload/" ไปข้างหน้า (8 = length of '/upload/')
+    const publicId = pathname.substring(uploadIndex + 8);
+
+    return publicId; // mini-blog/profiles/xmbw7bdibx5b1dsjdxo0
   } catch (err) {
     console.error("Invalid URL", err);
     return null;

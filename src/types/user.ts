@@ -85,10 +85,10 @@ export interface IUserCount {
   comments: number;
 }
 
-export interface IUpdateUserData {
+export interface IUpdateProfileData {
   name?: string;
   bio?: string;
-  profileImage?: string;
+  profileImage?: string | File;
   coverImage?: string;
   location?: string;
   website?: string;
@@ -97,5 +97,11 @@ export interface IUpdateUserData {
   education?: string;
   phone?: string;
   socialLinks?: IUserProfile['socialLinks'];
+}
+
+// สำหรับตั้งค่าความเป็นส่วนตัว
+export interface IUpdateSettingsData {
   settings?: IUserProfile['settings'];
 }
+
+// IUpdatePrivateData

@@ -41,11 +41,13 @@ import { useSession } from "next-auth/react";
 import { useUserBlogs } from "@/hooks/useUserBlogs";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useFollowUser } from "@/hooks/useFollow";
-import { IUpdateUserData, IUserBadge } from "@/types/user";
+import { IUpdateProfileData , IUserBadge } from "@/types/user";
 import { ProfileSkeleton } from "@/components/profile/ProfileSkeleton";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/state/ErrorState";
 import { EditProfileModal } from "@/components/profile/edit/EditProfileModal";
+import { getCloudinaryUrl } from "@/lib/image/cloudinary";
+import { env } from "process";
 
 type ProfilePageProps = {
   username: string;
@@ -154,37 +156,31 @@ export default function ProfilePage() {
     // fetchBlogs({ sortBy: value });
   };
 
-  const handleEditProfile = async (formData: any) => {
+  const handleEditProfile = async (formData: IUpdateProfileData ) => {
     try {
-      const socialLinks = {
-        twitter: formData.twitter || null,
-        github: formData.github || null,
-        website: formData.website || null,
-        instagram: formData.instagram || null,
-        facebook: formData.facebook || null,
-        youtube: formData.youtube || null,
-        linkedin: formData.linkedin || null,
-        tiktok: formData.tiktok || null,
-      };
+      // แยก socialLinks และ main fields
+      const { socialLinks, ...mainFields } = formData;
 
-      // กรองออก empty values
+      // กรอง socialLinks ที่มีค่า
       const cleanedSocialLinks = Object.fromEntries(
-        Object.entries(socialLinks).filter(
-          ([_, value]) => value !== null && value !== ""
+        Object.entries(socialLinks || {}).filter(
+          ([_, value]) => value && String(value).trim()
         )
       );
 
-      const updateData = {
-        name: formData.name,
-        bio: formData.bio || null,
-        location: formData.location || null,
-        jobTitle: formData.jobTitle || null,
-        company: formData.company || null,
+      const updateData: IUpdateProfileData  = {
+        ...mainFields,
+        // แปลง empty string เป็น null สำหรับ main fields
+        bio: mainFields.bio?.trim() || undefined,
+        location: mainFields.location?.trim() || undefined,
+        jobTitle: mainFields.jobTitle?.trim() || undefined,
+        company: mainFields.company?.trim() || undefined,
+        education: mainFields.education?.trim() || undefined,
         socialLinks:
           Object.keys(cleanedSocialLinks).length > 0
             ? cleanedSocialLinks
-            : null,
-      } as IUpdateUserData;
+            : undefined,
+      };
 
       const success = await updateProfile(updateData);
       if (success) {
@@ -266,11 +262,11 @@ export default function ProfilePage() {
                       <div className="relative w-32 h-32 md:w-40 md:h-40">
                         <Image
                           priority={false}
-                          src={profile.profileImage || "/default-avatar.png"}
+                          src={profile?.profileImage ? getCloudinaryUrl(profile?.profileImage) : process.env.NEXT_PUBLIC_DEFAULT_PROFILE_IMAGE!}
                           alt={profile.name}
                           fill
                           sizes="100%"
-                          className="rounded-full border-4 border-white/80 shadow-lg object-cover"
+                          className="rounded-full  shadow-lg object-cover"
                         />
                         {/* Online Status */}
                         {profile.lastActiveAt && (
@@ -407,8 +403,7 @@ export default function ProfilePage() {
                                 target="_blank"
                                 rel="noopener noreferrer"
                               >
-                                <Globe className="w-4 h-4 mr-2" />
-                                Website
+                                <Globe className="w-4 h-4" />
                               </a>
                             </Button>
                           )}
@@ -425,8 +420,7 @@ export default function ProfilePage() {
                                 target="_blank"
                                 rel="noopener noreferrer"
                               >
-                                <Github className="w-4 h-4 mr-2" />
-                                GitHub
+                                <Github className="w-4 h-4" />
                               </a>
                             </Button>
                           )}
@@ -443,8 +437,7 @@ export default function ProfilePage() {
                                 target="_blank"
                                 rel="noopener noreferrer"
                               >
-                                <Twitter className="w-4 h-4 mr-2" />
-                                Twitter
+                                <Twitter className="w-4 h-4" />
                               </a>
                             </Button>
                           )}
@@ -461,8 +454,7 @@ export default function ProfilePage() {
                                 target="_blank"
                                 rel="noopener noreferrer"
                               >
-                                <Linkedin className="w-4 h-4 mr-2" />
-                                LinkedIn
+                                <Linkedin className="w-4 h-4" />
                               </a>
                             </Button>
                           )}
@@ -479,8 +471,7 @@ export default function ProfilePage() {
                                 target="_blank"
                                 rel="noopener noreferrer"
                               >
-                                <Instagram className="w-4 h-4 mr-2" />
-                                Instagram
+                                <Instagram className="w-4 h-4" />
                               </a>
                             </Button>
                           )}

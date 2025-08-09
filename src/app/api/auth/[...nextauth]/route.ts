@@ -6,13 +6,11 @@ import GoogleProvider from "next-auth/providers/google";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { JWT } from "next-auth/jwt";
 import { Adapter, AdapterUser } from "next-auth/adapters";
-import { PrismaClient } from "@prisma/client";
 import { nanoid } from "nanoid";
-
-const prisma = new PrismaClient();
+import prisma from "@/lib/db";
 
 // Custom adapter that ensures username is set
-function CustomPrismaAdapter(p: PrismaClient): Adapter {
+function CustomPrismaAdapter(p: typeof prisma): Adapter {
   const baseAdapter = PrismaAdapter(p) as Adapter;
 
   return {
@@ -21,7 +19,7 @@ function CustomPrismaAdapter(p: PrismaClient): Adapter {
       // Ensure username is set when creating user
       const userData = {
         id: data.id,
-        name: data.name,
+        name: data.name ?? "",
         email: data.email,
         emailVerified: data.emailVerified,
         username: `user-${nanoid(6)}`, // Generate username

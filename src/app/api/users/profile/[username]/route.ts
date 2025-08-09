@@ -11,6 +11,8 @@ import {
   IUserSocialLinks,
   IUserStatus,
 } from "@/types/user";
+import { isValidImageType, MAX_FILE_SIZE } from "@/helpers/uploadFile";
+import cloudinary from "@/lib/cloudinary";
 
 type ParamsType = Promise<{ username: string }>;
 
@@ -24,7 +26,8 @@ export async function GET(
     const session = await getServerSession(authOptions);
 
     const user = await prisma.user.findUnique({
-      where: { username: username },
+      where: { username },
+      cacheStrategy: { ttl: 60 }, // FIX 
       include: {
         _count: {
           select: {
@@ -118,37 +121,106 @@ export async function PUT(
       });
     }
 
-    const body = await request.json();
-    const {
-      name,
-      bio,
-      profileImage,
-      coverImage,
-      socialLinks,
-      location,
-      jobTitle,
-      company,
-      education,
-      phone,
-      birthDate,
-      settings,
-    } = body;
+    // รับ FormData แทน JSON
+    const formData = await request.formData();
+
+    // ดึงข้อมูล text fields
+    const name = formData.get("name") as string;
+    const bio = formData.get("bio") as string;
+    const location = formData.get("location") as string;
+    const jobTitle = formData.get("jobTitle") as string;
+    const company = formData.get("company") as string;
+    const education = formData.get("education") as string;
+    const phone = formData.get("phone") as string;
+    const birthDate = formData.get("birthDate") as string;
+    const settings = formData.get("settings") as string;
+    const socialLinks = formData.get("socialLinks") as string;
+    const oldProfileImage = formData.get("oldProfileImage") as string;
+
+    // ดึงไฟล์รูป
+    const profileImageFile = formData.get("profileImage") as File;
+    const coverImageFile = formData.get("coverImage") as File;
+
+    let profileImageUrl: string | undefined;
+    let coverImageUrl: string | undefined;
+
+    // อัพโหลดรูปโปรไฟล์ (ถ้ามี)
+    if (profileImageFile && profileImageFile.size > 0) {
+      // ตรวจสอบไฟล์
+      if (profileImageFile.size > MAX_FILE_SIZE) {
+        return createErrorResponse({
+          code: "FILE_TOO_LARGE",
+          message: `File size too large. Maximum size is ${
+            MAX_FILE_SIZE / (1024 * 1024)
+          }MB`,
+          status: 400,
+        });
+      }
+
+      if (!isValidImageType(profileImageFile)) {
+        return createErrorResponse({
+          code: "INVALID_FILE_TYPE",
+          message:
+            "Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed",
+          status: 400,
+        });
+      }
+
+      // อัพโหลดรูปใหม่
+      const arrayBuffer = await profileImageFile.arrayBuffer();
+      const base64 = Buffer.from(arrayBuffer).toString("base64");
+      const dataURI = `data:${profileImageFile.type};base64,${base64}`;
+
+      const uploadRes = await cloudinary.uploader.upload(dataURI, {
+        folder: "mini-blog/profiles",
+        transformation: [
+          {
+            width: 400,
+            height: 400,
+            crop: "fill",
+            quality: "auto:good",
+            format: "auto",
+          },
+        ],
+        resource_type: "auto",
+        unique_filename: true,
+        overwrite: false,
+      });
+
+      profileImageUrl = uploadRes.public_id;
+
+      // ลบรูปเก่า (async)
+      if (oldProfileImage) {
+        Promise.resolve().then(async () => {
+          try {
+            await cloudinary.uploader.destroy(oldProfileImage);
+            console.log("Old profile image deleted:", oldProfileImage);
+          } catch (err) {
+            console.error("Failed to delete old profile image:", err);
+          }
+        });
+      }
+    }
+
+    // Parse JSON fields
+    const parsedSocialLinks = socialLinks ? JSON.parse(socialLinks) : undefined;
+    const parsedSettings = settings ? JSON.parse(settings) : undefined;
 
     const updatedUser = await prisma.user.update({
       where: { username: username },
       data: {
         ...(name && { name }),
         ...(bio !== undefined && { bio }),
-        ...(profileImage !== undefined && { profileImage }),
-        ...(coverImage !== undefined && { coverImage }),
-        ...(socialLinks && { socialLinks }),
+        ...(profileImageUrl !== undefined && { profileImage: profileImageUrl }),
+        ...(coverImageUrl !== undefined && { coverImage: coverImageUrl }),
+        ...(parsedSocialLinks && { socialLinks: parsedSocialLinks }),
         ...(location !== undefined && { location }),
         ...(jobTitle !== undefined && { jobTitle }),
         ...(company !== undefined && { company }),
         ...(education !== undefined && { education }),
         ...(phone !== undefined && { phone }),
         ...(birthDate && { birthDate: new Date(birthDate) }),
-        ...(settings && { settings }),
+        ...(parsedSettings && { settings: parsedSettings }),
       },
       include: {
         _count: {

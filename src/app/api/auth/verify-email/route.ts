@@ -1,8 +1,7 @@
 import { createErrorResponse } from "@/lib/api-response";
+import prisma from "@/lib/db";
 import { PrismaClient } from "@prisma/client";
 import { NextResponse } from "next/server";
-
-const prisma = new PrismaClient();
 
 // Verify Email API
 export async function POST(req: Request) {

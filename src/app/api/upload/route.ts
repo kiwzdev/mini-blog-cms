@@ -3,15 +3,7 @@ import { NextResponse } from "next/server";
 import cloudinary from "@/lib/cloudinary";
 import { extractPublicIdFromUrl } from "@/lib/image/cloudinary";
 import { createErrorResponse, createSuccessResponse } from "@/lib/api-response";
-
-// กำหนดขนาดไฟล์สูงสุด (5MB)
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-
-// Validate file type
-function isValidImageType(file: File): boolean {
-  const validTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-  return validTypes.includes(file.type);
-}
+import { isValidImageType, MAX_FILE_SIZE } from "@/helpers/uploadFile";
 
 // Upload File
 export async function POST(req: Request) {
