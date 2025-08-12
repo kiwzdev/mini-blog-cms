@@ -27,7 +27,7 @@ export async function GET(
 
     const user = await prisma.user.findUnique({
       where: { username },
-      cacheStrategy: { ttl: 60 }, // FIX 
+      cacheStrategy: { ttl: 60 }, // FIX
       include: {
         _count: {
           select: {
@@ -49,30 +49,17 @@ export async function GET(
       });
     }
 
+    // Increment blog views
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { views: { increment: 1 } },
+    });
+
     // Check if user is viewing their own profile
     const isOwnProfile = session?.user?.username === username;
 
-    const responseData: IUserProfile = {
-      id: user.id,
-      username: user.username,
-      name: user.name,
-      bio: user.bio || "",
-      profileImage: user.profileImage || "",
-      coverImage: user.coverImage || "",
-      socialLinks: user.socialLinks as IUserSocialLinks,
-      location: user.location || "",
-      createdAt: user.createdAt,
-      lastActiveAt: user.lastActiveAt || undefined,
-      jobTitle: user.jobTitle || "",
-      company: user.company || "",
-      education: user.education || "",
-      status: user.status as IUserStatus,
-      badge: user.badge as IUserBadge,
-      isVerified: user.emailVerified || undefined,
-      _count: {
-        ...user._count,
-        views: user.views,
-      } as IUserCount,
+    const responseData = {
+      ...user,
       // Include private fields only for own profile
       ...(isOwnProfile && {
         email: user.email || "",

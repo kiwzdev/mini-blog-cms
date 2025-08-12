@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import BlogCard from "@/components/blog/BlogCard";
 import BlogCardSkeleton from "@/components/blog/BlogCardSkeleton";
-import MainNavbar from "@/components/layout/Navbar";
+
 import { formatDate, formatDistanceToNow } from "@/lib/utils";
 import {
   Calendar,
@@ -48,6 +48,7 @@ import { ErrorState } from "@/components/state/ErrorState";
 import { EditProfileModal } from "@/components/profile/edit/EditProfileModal";
 import { getCloudinaryUrl } from "@/lib/image/cloudinary";
 import { env } from "process";
+import { SmartNavigation } from "@/components/Navbar/SmartNavbar";
 
 type ProfilePageProps = {
   username: string;
@@ -205,7 +206,7 @@ export default function ProfilePage() {
   if (isLoading) {
     return (
       <>
-        <MainNavbar />
+        <SmartNavigation />
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
           <div className="max-w-6xl mx-auto px-4 py-8">
             <ProfileSkeleton />
@@ -249,7 +250,7 @@ export default function ProfilePage() {
   if (profile)
     return (
       <>
-        <MainNavbar />
+        <SmartNavigation />
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
           <div className="max-w-6xl mx-auto px-4 py-8">
             {/* Profile Header */}

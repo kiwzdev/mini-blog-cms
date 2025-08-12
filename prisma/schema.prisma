@@ -95,6 +95,9 @@ model Blog {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  // Stats
+  views Int @default(0)
+
   authorId String
   author   User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
   comments Comment[]
@@ -102,7 +105,6 @@ model Blog {
 
   @@index([published, createdAt(sort: Desc)], name: "blog_list_idx") // สำหรับ blogs query
   @@index([authorId, published, createdAt(sort: Desc)], name: "blog_author_idx") // blogs's author query
-  
   @@map("blogs")
 }
 

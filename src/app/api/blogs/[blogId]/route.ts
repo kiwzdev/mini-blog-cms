@@ -4,6 +4,7 @@ import { authOptions } from "../../auth/[...nextauth]/route";
 import prisma from "@/lib/db";
 import { UpdateBlogInput } from "@/lib/validations/blogSchema";
 import { createErrorResponse, createSuccessResponse } from "@/lib/api-response";
+import { id } from "zod/v4/locales";
 
 type ParamsType = Promise<{ blogId: string }>;
 
@@ -76,6 +77,12 @@ export async function GET(
         status: 401,
       });
     }
+
+    // Increment blog views
+    await prisma.blog.update({
+      where: { id: blogId },
+      data: { views: { increment: 1 } },
+    });
 
     const isLiked = session?.user?.id
       ? blog.likes.some((like) => like.user.id === session.user.id)

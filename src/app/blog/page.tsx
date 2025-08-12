@@ -3,34 +3,22 @@
 
 import { useState, Suspense, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import BlogCardSkeleton from "@/components/blog/BlogCardSkeleton";
 import BlogCard from "@/components/blog/BlogCard";
-import MainNavbar from "@/components/layout/Navbar";
 import {
   Search,
-  Calendar,
-  Tag,
-  SortDesc,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
 import { IBlogCard } from "@/types/blog";
 import { useLoading } from "@/stores/useLoadingStore";
 import { getAllBlogs } from "@/api/blog";
-import Loading from "@/components/layout/Loading";
-import { BLOG_CATEGORIES } from "@/lib/config";
+import Loading from "@/components/Loading";
 import toast from "react-hot-toast";
+import { SmartNavigation } from "@/components/Navbar/SmartNavbar";
 
 export default function BlogPage() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [sortBy, setSortBy] = useState<"latest" | "popular">("latest");
-  const [timeRange, setTimeRange] = useState<"all" | "week" | "month" | "year">(
-    "all"
-  );
-
   const [blogs, setBlogs] = useState<IBlogCard[] | null>(null);
   const { isLoading, setLoading } = useLoading(`blog-feed`);
 
@@ -61,7 +49,7 @@ export default function BlogPage() {
   const fetchBlogs = async (page = 1) => {
     const response = await getAllBlogs({
       page,
-      limit: 10,
+      limit: 3,
     });
     if (response.success) {
       setBlogs(response.data.blogs);
@@ -74,67 +62,14 @@ export default function BlogPage() {
   const handlePageChange = (newPage: number) => {
     setPagination((p) => ({ ...p!, page: newPage }));
     fetchBlogs(newPage);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 100, behavior: "smooth" });
   };
-
-  // Filter และ Search logic
-  const filteredBlogs = blogs?.filter((blog) => {
-    // Search filter
-    const matchesSearch =
-      blog.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      blog.excerpt.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      blog.author.name.toLowerCase().includes(searchQuery.toLowerCase());
-    // Category filter
-    const matchesCategory =
-      selectedCategory === "all" || blog.category === selectedCategory;
-
-    // Time range filter
-    let matchesTimeRange = true;
-    if (timeRange !== "all") {
-      const now = new Date();
-      const blogDate = new Date(blog.createdAt);
-      const daysDiff = Math.floor(
-        (now.getTime() - blogDate.getTime()) / (1000 * 60 * 60 * 24)
-      );
-
-      switch (timeRange) {
-        case "week":
-          matchesTimeRange = daysDiff <= 7;
-          break;
-        case "month":
-          matchesTimeRange = daysDiff <= 30;
-          break;
-        case "year":
-          matchesTimeRange = daysDiff <= 365;
-          break;
-      }
-    }
-
-    return matchesSearch && matchesCategory && matchesTimeRange;
-  });
-
-  // Sort logic
-  const sortedBlogs = filteredBlogs
-    ? [...filteredBlogs].sort((a, b) => {
-        if (a._count && b._count) {
-          if (sortBy === "latest") {
-            return (
-              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-            );
-          } else {
-            return b._count.likes - a._count.likes;
-          }
-        } else {
-          return (
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          );
-        }
-      })
-    : [];
 
   // Pagination Component
   const PaginationComponent = () => {
-    if (!pagination || pagination.pages <= 1) return null;
+    if (!pagination || pagination.pages <= 1) {
+      return null;
+    }
 
     const { page, pages } = pagination;
     const visiblePages = [];
@@ -231,7 +166,7 @@ export default function BlogPage() {
   else
     return (
       <>
-        <MainNavbar />
+        <SmartNavigation />
         <div className="min-h-screen py-12 px-4">
           <div className="max-w-6xl mx-auto">
             {/* Header */}
@@ -244,161 +179,34 @@ export default function BlogPage() {
               </p>
             </div>
 
-            {/* Search & Filters */}
-            <Card className="glass-card mb-8">
-              <CardContent className="p-6">
-                {/* Search Bar */}
-                <div className="relative mb-6">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <Input
-                    type="text"
-                    placeholder="ค้นหาบทความ, ชื่อผู้เขียน..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 h-12 text-base"
-                  />
-                </div>
-
-                {/* Filter Options */}
-                <div className="space-y-4">
-                  {/* Categories */}
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <Tag className="w-4 h-4" />
-                      <span className="font-medium">หมวดหมู่</span>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {BLOG_CATEGORIES.map((category) => (
-                        <Button
-                          key={category.id}
-                          variant={
-                            selectedCategory === category.id
-                              ? "default"
-                              : "outline"
-                          }
-                          size="sm"
-                          onClick={() => setSelectedCategory(category.id)}
-                          className="text-sm"
-                        >
-                          {category.name}
-                          {/* <span className="ml-1 text-xs opacity-70">
-                            ({category.count})
-                          </span> */}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Time Range & Sort */}
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    {/* Time Range */}
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Calendar className="w-4 h-4" />
-                        <span className="font-medium text-sm">ช่วงเวลา</span>
-                      </div>
-                      <div className="flex gap-2">
-                        {[
-                          { value: "all", label: "ทั้งหมด" },
-                          { value: "week", label: "สัปดาห์นี้" },
-                          { value: "month", label: "เดือนนี้" },
-                          { value: "year", label: "ปีนี้" },
-                        ].map((option) => (
-                          <Button
-                            key={option.value}
-                            variant={
-                              timeRange === option.value ? "default" : "outline"
-                            }
-                            size="sm"
-                            onClick={() =>
-                              setTimeRange(
-                                option.value as
-                                  | "all"
-                                  | "week"
-                                  | "month"
-                                  | "year"
-                              )
-                            }
-                            className="text-sm"
-                          >
-                            {option.label}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Sort */}
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <SortDesc className="w-4 h-4" />
-                        <span className="font-medium text-sm">เรียงตาม</span>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant={sortBy === "latest" ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setSortBy("latest")}
-                          className="text-sm"
-                        >
-                          ล่าสุด
-                        </Button>
-                        <Button
-                          variant={sortBy === "popular" ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setSortBy("popular")}
-                          className="text-sm"
-                        >
-                          ยอดนิยม
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Results Info */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-4">
-                <p className="text-slate-600 dark:text-slate-400">
-                  {filteredBlogs?.length === blogs.length
-                    ? `ทั้งหมด ${sortedBlogs.length} โพสต์`
-                    : `พบ ${sortedBlogs.length} โพสต์จากทั้งหมด ${blogs.length} โพสต์`}
-                </p>
-
-                {/* Pagination Info */}
-                {pagination && (
-                  <p className="text-sm text-slate-500">
-                    หน้า {pagination.page} จาก {pagination.pages || 1}
-                  </p>
-                )}
-              </div>
-
-              {/* Clear Filters */}
-              {(searchQuery ||
-                selectedCategory !== "all" ||
-                timeRange !== "all") && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setSearchQuery("");
-                    setSelectedCategory("all");
-                    setTimeRange("all");
-                  }}
-                  className="text-sm"
+            <form className="w-full max-w-3xl mx-auto mb-8">
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  id="searchInput"
+                  placeholder="พิมพ์คำค้นหาที่นี่..."
+                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg 
+                 focus:outline-none focus:ring-2 focus:ring-blue-400
+                 text-gray-800 placeholder-gray-400 text-base
+                 transition"
+                />
+                <button
+                  type="submit"
+                  className="px-5 py-3 bg-blue-500 text-white rounded-lg 
+                 hover:bg-blue-600 transition"
+                  id="searchButton"
                 >
-                  ล้างตัวกรอง
-                </Button>
-              )}
-            </div>
+                  Search
+                </button>
+              </div>
+            </form>
 
             {/* Blogs Grid */}
-            {sortedBlogs.length > 0 ? (
+            {blogs.length > 0 ? (
               <>
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                   <Suspense fallback={<BlogCardSkeleton />}>
-                    {sortedBlogs.map((blog) => (
+                    {blogs.map((blog) => (
                       <BlogCard key={blog.id} blog={blog as IBlogCard} />
                     ))}
                   </Suspense>

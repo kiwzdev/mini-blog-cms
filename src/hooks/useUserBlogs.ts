@@ -1,9 +1,9 @@
 import { getUserBlogs } from "@/api/user";
 import { IBlogCard } from "@/types/blog";
-import { useState, useCallback, useRef, useMemo, useEffect } from "react";
+import { useState, useCallback} from "react";
 
 // ปรับปรุง hook
-export const useUserBlogs = (userId: string, options = {}) => {
+export const useUserBlogs = (userId: string) => {
   const [blogs, setBlogs] = useState<IBlogCard[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
@@ -12,35 +12,10 @@ export const useUserBlogs = (userId: string, options = {}) => {
   const [isLoadingMore, setIsLoadingMore] = useState(false); // แยก loading state
   const [error, setError] = useState<string | null>(null);
 
-  // ป้องกัน concurrent requests
-  const loadingRef = useRef<boolean>(false);
-  const abortControllerRef = useRef<AbortController | null>(null);
-
-  // Memoize options เพื่อป้องกัน unnecessary re-renders
-  const memoizedOptions: Record<string, any> = useMemo(
-    () => options,
-    [options]
-  );
-
   // ดึงข้อมูล blogs (ปรับปรุง)
   const fetchBlogs = useCallback(
-    async (page = 1, limit = 10, append = false) => {
+    async (page = 1, limit = 3, append = false) => {
       if (!userId) return false;
-
-      // ป้องกัน concurrent requests
-      if (loadingRef.current) {
-        console.warn("Request already in progress");
-        return false;
-      }
-
-      // Cancel previous request if exists
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-
-      // Create new abort controller
-      abortControllerRef.current = new AbortController();
-      loadingRef.current = true;
 
       // Set appropriate loading state
       if (append) {
@@ -56,11 +31,6 @@ export const useUserBlogs = (userId: string, options = {}) => {
           limit,
           // หมายเหตุ: signal ต้องเพิ่มใน getUserBlogs function
         });
-
-        // ตรวจสอบว่า request ถูก abort หรือไม่
-        if (abortControllerRef.current?.signal.aborted) {
-          return false;
-        }
 
         if (response.success) {
           const newBlogs = response.data as IBlogCard[];
@@ -91,12 +61,7 @@ export const useUserBlogs = (userId: string, options = {}) => {
         } else {
           throw new Error(response.error?.message || "Failed to fetch blogs");
         }
-      } catch (error: any) {
-        // ไม่แสดง error ถ้า request ถูก abort
-        if (error?.name === "AbortError") {
-          return false;
-        }
-
+      } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : "Error fetching blogs";
 
@@ -107,12 +72,8 @@ export const useUserBlogs = (userId: string, options = {}) => {
           console.error("Load more error:", errorMessage);
         }
 
-        memoizedOptions?.onError?.(errorMessage);
         return false;
       } finally {
-        loadingRef.current = false;
-        abortControllerRef.current = null;
-
         if (append) {
           setIsLoadingMore(false);
         } else {
@@ -120,33 +81,20 @@ export const useUserBlogs = (userId: string, options = {}) => {
         }
       }
     },
-    [userId, memoizedOptions]
+    [userId]
   );
 
   // โหลดเพิ่ม blogs (ปรับปรุง)
   const loadMoreBlogs = useCallback(async () => {
     // เพิ่มเงื่อนไขป้องกัน
-    if (!hasMore || isLoadingBlogs || isLoadingMore || loadingRef.current) {
+    if (!hasMore || isLoadingBlogs || isLoadingMore) {
       return false;
     }
 
-    const success = await fetchBlogs(currentPage + 1, 10, true);
-
-    // จัดการ error state สำหรับ loadMore
-    if (!success) {
-      // อาจแสดง toast error หรือ retry button
-      memoizedOptions?.onLoadMoreError?.("Failed to load more blogs");
-    }
+    const success = await fetchBlogs(currentPage + 1, 3, true);
 
     return success;
-  }, [
-    hasMore,
-    isLoadingBlogs,
-    isLoadingMore,
-    currentPage,
-    fetchBlogs,
-    memoizedOptions,
-  ]);
+  }, [hasMore, isLoadingBlogs, isLoadingMore, currentPage, fetchBlogs]);
 
   // รีเซ็ตข้อมูล
   const resetBlogs = useCallback(() => {
@@ -155,12 +103,6 @@ export const useUserBlogs = (userId: string, options = {}) => {
     setTotalPages(0);
     setHasMore(false);
     setError(null);
-
-    // Cancel any ongoing requests
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    loadingRef.current = false;
   }, []);
 
   // รีเฟรชข้อมูล
@@ -168,15 +110,6 @@ export const useUserBlogs = (userId: string, options = {}) => {
     resetBlogs();
     return await fetchBlogs(1, 10, false);
   }, [resetBlogs, fetchBlogs]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-    };
-  }, []);
 
   return {
     // Data

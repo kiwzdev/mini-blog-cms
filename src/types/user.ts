@@ -48,6 +48,7 @@ export interface IUserProfile {
 
   // Stats
   _count: IUserCount;
+  views: number;
 }
 
 export interface IUserSocialLinks {
@@ -81,7 +82,6 @@ export interface IUserCount {
   followers: number;
   following: number;
   blogLikes: number;
-  views: number;
   comments: number;
 }
 

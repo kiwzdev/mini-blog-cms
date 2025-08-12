@@ -6,9 +6,10 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import BlogCard from "@/components/blog/BlogCard";
 import BlogCardSkeleton from "@/components/blog/BlogCardSkeleton";
-import MainNavbar from "@/components/layout/Navbar";
+
 import { ArrowLeft, FileText } from "lucide-react";
 import { IBlog } from "@/types/blog";
+import { SmartNavigation } from "@/components/Navbar/SmartNavbar";
 
 interface UserBlogsPageProps {
   params: {
@@ -79,7 +80,7 @@ export default function UserBlogsPage({ params }: UserBlogsPageProps) {
 
   return (
     <>
-      <MainNavbar />
+      <SmartNavigation />
       <div className="min-h-screen py-8 px-4">
         <div className="max-w-6xl mx-auto">
           {/* Header */}

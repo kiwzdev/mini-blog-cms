@@ -3,7 +3,7 @@ import { notFound, useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getBlogById } from "@/api/blog";
 import { IBlog } from "@/types/blog";
-import Loading from "@/components/layout/Loading";
+import Loading from "@/components/Loading";
 import { useLoading } from "@/stores/useLoadingStore";
 import { BlogContent } from "@/components/blog/BlogContent";
 

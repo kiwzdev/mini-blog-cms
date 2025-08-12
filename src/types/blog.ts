@@ -19,7 +19,6 @@ export interface IBlogCard {
   _count?: {
     comments: number;
     likes: number;
-    views: number;
   };
 }
 
@@ -52,6 +51,7 @@ export interface IBlog extends IBlogCard {
 
   comments?: IComment[];
   likes?: ILike[];
+  views: number;
 }
 
 export interface IComment {

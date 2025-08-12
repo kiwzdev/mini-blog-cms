@@ -10,7 +10,7 @@ import { RichTextEditor } from "@/components/editor/RichTextEditor";
 import { MarkdownEditor } from "@/components/editor/MarkdownEditor";
 import { ArrowLeft, Save, Eye, Upload } from "lucide-react";
 import Link from "next/link";
-import MainNavbar from "@/components/layout/Navbar";
+
 import Image from "next/image";
 import toast from "react-hot-toast";
 import { createBlog } from "@/api/blog";
@@ -24,9 +24,10 @@ import {
 } from "@/components/ui/select";
 import { createBlogSchema } from "@/lib/validations/blogSchema";
 import { isValidHttpUrl } from "@/lib/image";
-import Loading from "@/components/layout/Loading";
+import Loading from "@/components/Loading";
 import { BLOG_CATEGORIES } from "@/lib/config";
 import { uploadImage } from "@/api/upload";
+import { SmartNavigation } from "@/components/Navbar/SmartNavbar";
 
 export default function NewBlogPage() {
   const router = useRouter();
@@ -131,7 +132,7 @@ export default function NewBlogPage() {
 
   return (
     <Suspense fallback={<Loading />}>
-      <MainNavbar />
+      <SmartNavigation />
       <div className="min-h-screen py-12 px-4">
         <div className="space-y-6 max-w-6xl mx-auto">
           {/* Header */}

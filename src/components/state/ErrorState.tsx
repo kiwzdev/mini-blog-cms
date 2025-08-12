@@ -1,7 +1,8 @@
 import { AlertCircle } from "lucide-react";
-import MainNavbar from "../layout/Navbar";
+import MainNavbar from "../Navbar";
 import { AlertDialog, AlertDialogDescription } from "../ui/alert-dialog";
 import { Button } from "../ui/button";
+import { SmartNavigation } from "../Navbar/SmartNavbar";
 
 export const ErrorState = ({
   error,
@@ -11,7 +12,7 @@ export const ErrorState = ({
   onRetry: () => void;
 }) => (
   <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
-    <MainNavbar />
+    <SmartNavigation />
     <div className="max-w-6xl mx-auto px-4 py-8">
       <AlertDialog>
         <AlertCircle className="h-4 w-4" />

@@ -1,11 +1,13 @@
-import MainNavbar from "@/components/layout/Navbar";
+"use client";
+
+import { SmartNavigation } from "@/components/Navbar/SmartNavbar";
 import Link from "next/link";
 
 // app/blog/not-found.tsx (Blog specific 404)
 export default function BlogNotFound() {
   return (
     <>
-      <MainNavbar />
+      <SmartNavigation />
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-4xl font-bold mb-4">ไม่พบบทความ</h1>

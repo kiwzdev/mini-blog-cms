@@ -17,7 +17,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import Link from "next/link";
-import MainNavbar from "@/components/layout/Navbar";
+
 import Image from "next/image";
 import toast from "react-hot-toast";
 import { updateBlog, getBlogById, deleteBlog } from "@/api/blog";
@@ -44,9 +44,10 @@ import { updateBlogSchema } from "@/lib/validations/blogSchema";
 import { BLOG_CATEGORIES } from "@/lib/config";
 import { IBlog } from "@/types/blog";
 import { isValidHttpUrl } from "@/lib/image";
-import Loading from "@/components/layout/Loading";
+import Loading from "@/components/Loading";
 import { uploadImage } from "@/api/upload";
 import { useLoading } from "@/stores/useLoadingStore";
+import { SmartNavigation } from "@/components/Navbar/SmartNavbar";
 
 const categories = BLOG_CATEGORIES;
 
@@ -218,7 +219,7 @@ export default function EditBlogPage() {
   else
     return (
       <>
-        <MainNavbar />
+        <SmartNavigation/>
         <div className="min-h-screen py-12 px-4">
           <div className="space-y-6 max-w-6xl mx-auto">
             {/* Header */}

@@ -5,14 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowRight, Edit3, Globe, Zap } from "lucide-react";
 import { useSession } from "next-auth/react";
-import MainNavbar from "../layout/Navbar";
+import MainNavbar from "../Navbar";
+import { SmartNavigation } from "../Navbar/SmartNavbar";
 
 export default function HomePageContent() {
   const { data: session } = useSession();
 
   return (
     <div className="min-h-screen">
-      <MainNavbar />
+      <SmartNavigation />
       {/* Hero Section */}
       <section className="relative overflow-hidden py-20 px-4">
         <div className="max-w-7xl mx-auto text-center">

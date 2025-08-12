@@ -99,7 +99,7 @@ export function BlogContent({ blog }: { blog: IBlog }) {
 
             <div className="flex items-center gap-1">
               <Eye className="w-4 h-4" />
-              {blog._count?.views || 0} ครั้ง
+              {blog.views || 0} ครั้ง
             </div>
           </div>
 

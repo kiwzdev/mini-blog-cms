@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import toast from "react-hot-toast";
-import Loading from "@/components/layout/Loading";
+import Loading from "@/components/Loading";
 import { userSchema } from "@/lib/validations/userSchema";
 import { useSession } from "next-auth/react";
 import { signUp } from "@/api/auth";
