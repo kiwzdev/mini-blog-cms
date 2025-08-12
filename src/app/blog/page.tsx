@@ -14,6 +14,7 @@ import Loading from "@/components/Loading";
 import toast from "react-hot-toast";
 import { SmartNavigation } from "@/components/Navbar/SmartNavbar";
 import BlogFilters from "@/components/blog/BlogFilters";
+import { BLOGS_PAGE_LIMIT } from "@/lib/config";
 
 export default function BlogPage() {
   const [blogs, setBlogs] = useState<IBlogCard[] | null>(null);
@@ -76,7 +77,7 @@ const resetFilters = () => {
   const fetchBlogs = async (page = 1, currentFilters = filters) => {
     const response = await getAllBlogs({
       page,
-      limit: 3,
+      limit: BLOGS_PAGE_LIMIT,
       ...currentFilters,
     });
     if (response.success) {
