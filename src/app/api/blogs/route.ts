@@ -4,21 +4,63 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import prisma from "@/lib/db";
 import { ICreateBlogInput } from "@/types/blog";
 import { createErrorResponse, createSuccessResponse } from "@/lib/api-response";
+import { Prisma } from "@prisma/client";
 
 // GET /api/blogs - Get all blogs with pagination and filters
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
+
+    // Pagination params
     const limit = parseInt(searchParams.get("limit") || "10");
     const page = parseInt(searchParams.get("page") || "1");
     const skip = (page - 1) * limit;
 
-    const whereClause = {
+    // Filters params
+    const search = searchParams.get("search");
+    const category = searchParams.get("category");
+    const status = searchParams.get("status");
+
+    // Sorting params
+    const sortBy = searchParams.get("sortBy") || "createdAt";
+    const sortOrder = searchParams.get("sortOrder") || "desc";
+
+    // Type-safe approach
+    const whereClause: Prisma.BlogWhereInput = {
       published: true,
-      ...(userId && { authorId: userId }),
     };
+
+    if (search) {
+      whereClause.OR = [
+        { title: { contains: search, mode: "insensitive" } },
+        { excerpt: { contains: search, mode: "insensitive" } },
+      ];
+    }
+
+    if (category && category !== "all") {
+      whereClause.category = category;
+    }
+
+    if (status && status !== "all") {
+      if (status === "published") {
+        whereClause.published = true; // Published
+      } else if (status === "draft") {
+        whereClause.published = false; // Unpublished
+      }
+    }
+
+    // Type-safe orderBy
+    let orderBy: Prisma.BlogOrderByWithRelationInput;
+    switch (sortBy) {
+      case "likes":
+        orderBy = { likes: { _count: sortOrder as Prisma.SortOrder } };
+        break;
+      case "createdAt":
+      default:
+        orderBy = { createdAt: sortOrder as Prisma.SortOrder };
+        break;
+    }
 
     // 1. ใช้ Promise.all เพื่อ parallel queries
     const [blogs, total] = await Promise.all([
@@ -26,7 +68,7 @@ export async function GET(request: NextRequest) {
         where: whereClause,
         skip,
         take: limit,
-        orderBy: { createdAt: "desc" },
+        orderBy,
         select: {
           id: true,
           title: true,
@@ -51,7 +93,7 @@ export async function GET(request: NextRequest) {
           },
         },
       }),
-      prisma.blog.count({ where: whereClause })
+      prisma.blog.count({ where: whereClause }),
     ]);
 
     // 2. แยก query likes ถ้า user login
@@ -60,11 +102,11 @@ export async function GET(request: NextRequest) {
       const likes = await prisma.blogLike.findMany({
         where: {
           userId: session.user.id,
-          blogId: { in: blogs.map(blog => blog.id) }
+          blogId: { in: blogs.map((blog) => blog.id) },
         },
-        select: { blogId: true }
+        select: { blogId: true },
       });
-      likedBlogIds = likes.map(like => like.blogId);
+      likedBlogIds = likes.map((like) => like.blogId);
     }
 
     // 3. Map isLiked ให้กับ blogs
@@ -93,12 +135,6 @@ export async function GET(request: NextRequest) {
     });
   }
 }
-// -- สำหรับ blogs query
-// CREATE INDEX idx_blogs_published_created ON blogs(published, createdAt DESC);
-// CREATE INDEX idx_blogs_author_published ON blogs(authorId, published, createdAt DESC);
-
-// -- สำหรับ likes query
-// CREATE INDEX idx_likes_user_blog ON likes(userId, blogId);
 
 // POST /api/blogs - Create new blog
 export async function POST(request: NextRequest) {

@@ -27,6 +27,15 @@ export interface Category {
 }
 
 export const BLOG_CATEGORIES: Category[] = [
+    {
+    id: "all",
+    name: "ทั้งหมด",
+    nameEn: "All",
+    icon: BookOpen,
+    color: "bg-gray-400",
+    description: "แสดงบทความทุกหมวดหมู่",
+    slug: "all",
+  },
   {
     id: "technology",
     name: "เทคโนโลยี",

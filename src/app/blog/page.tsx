@@ -6,22 +6,49 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import BlogCardSkeleton from "@/components/blog/BlogCardSkeleton";
 import BlogCard from "@/components/blog/BlogCard";
-import {
-  Search,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
-import { IBlogCard } from "@/types/blog";
+import { Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Filters, IBlogCard } from "@/types/blog";
 import { useLoading } from "@/stores/useLoadingStore";
 import { getAllBlogs } from "@/api/blog";
 import Loading from "@/components/Loading";
 import toast from "react-hot-toast";
 import { SmartNavigation } from "@/components/Navbar/SmartNavbar";
+import BlogFilters from "@/components/blog/BlogFilters";
 
 export default function BlogPage() {
   const [blogs, setBlogs] = useState<IBlogCard[] | null>(null);
   const { isLoading, setLoading } = useLoading(`blog-feed`);
 
+  // Filters state
+  const [filters, setFilters] = useState({
+    category: "",
+    status: "",
+    search: "",
+    dateRange: { start: "", end: "" },
+  });
+
+  useEffect(() => {
+    fetchBlogs(1, filters); // reset to page 1 เมื่อ filter เปลี่ยน
+  }, [filters]);
+
+  const handleSearch = () => {
+  fetchBlogs(1, filters); // fetch ด้วย current filters
+};
+
+const handleFilterChange = <K extends keyof Filters>(key: K, value: Filters[K]) => {
+  setFilters((prev) => ({ ...prev, [key]: value }));
+};
+
+const resetFilters = () => {
+  setFilters({
+    category: "",
+    status: "",
+    search: "",
+    dateRange: { start: "", end: "" },
+  });
+};
+
+  // Pagination state
   const [pagination, setPagination] = useState<{
     page: number;
     limit: number;
@@ -46,10 +73,11 @@ export default function BlogPage() {
     fetchBlog();
   }, []);
 
-  const fetchBlogs = async (page = 1) => {
+  const fetchBlogs = async (page = 1, currentFilters = filters) => {
     const response = await getAllBlogs({
       page,
       limit: 3,
+      ...currentFilters,
     });
     if (response.success) {
       setBlogs(response.data.blogs);
@@ -59,9 +87,10 @@ export default function BlogPage() {
     }
   };
 
+  // Handle Pagination
   const handlePageChange = (newPage: number) => {
     setPagination((p) => ({ ...p!, page: newPage }));
-    fetchBlogs(newPage);
+    fetchBlogs(newPage, filters);
     window.scrollTo({ top: 100, behavior: "smooth" });
   };
 
@@ -179,27 +208,13 @@ export default function BlogPage() {
               </p>
             </div>
 
-            <form className="w-full max-w-3xl mx-auto mb-8">
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  id="searchInput"
-                  placeholder="พิมพ์คำค้นหาที่นี่..."
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg 
-                 focus:outline-none focus:ring-2 focus:ring-blue-400
-                 text-gray-800 placeholder-gray-400 text-base
-                 transition"
-                />
-                <button
-                  type="submit"
-                  className="px-5 py-3 bg-blue-500 text-white rounded-lg 
-                 hover:bg-blue-600 transition"
-                  id="searchButton"
-                >
-                  Search
-                </button>
-              </div>
-            </form>
+            {/* Filters */}
+            <BlogFilters
+              onSearch={handleSearch}
+              filters={filters}
+              onFilterChange={handleFilterChange}
+              onResetFilters={resetFilters}
+            />
 
             {/* Blogs Grid */}
             {blogs.length > 0 ? (
@@ -223,28 +238,6 @@ export default function BlogPage() {
                   <h3 className="text-xl font-semibold mb-2">
                     ไม่พบบทความที่ตรงกับการค้นหา
                   </h3>
-                  <p className="text-slate-500 mb-4">
-                    ลองปรับเปลี่ยนคำค้นหาหรือตัวกรองเพื่อค้นหาบทความที่คุณสนใจ
-                  </p>
-                  <div className="flex flex-wrap gap-2 justify-center items-center">
-                    <span className="text-sm text-slate-400">คำแนะนำ:</span>
-                    {["JavaScript", "React", "Next.js", "CSS"].map(
-                      (suggestion) => (
-                        <Button
-                          key={suggestion}
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSearchQuery(suggestion);
-                            setSelectedCategory("all");
-                          }}
-                          className="text-sm"
-                        >
-                          {suggestion}
-                        </Button>
-                      )
-                    )}
-                  </div>
                 </CardContent>
               </Card>
             )}

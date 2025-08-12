@@ -1,5 +1,7 @@
 // lib/config/index.ts - Main export file
-export * from "./categories";
+export * from "./blog/categories";
+export * from "./blog/pagination";
+export * from "./blog/status";
 // export * from "./site";
 // export * from "./editor";
 // export * from "./blog";

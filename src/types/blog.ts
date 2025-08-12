@@ -76,3 +76,15 @@ export interface ILike {
   userId: string;
   user: IUser;
 }
+
+export type DateRange = {
+  start: string;
+  end: string;
+};
+
+export type Filters = {
+  category: string;
+  status: string;
+  search: string;
+  dateRange: DateRange;
+};

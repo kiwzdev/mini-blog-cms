@@ -7,8 +7,16 @@ import { ICreateBlogInput, IUpdateBlogInput } from "@/types/blog";
 // For Blog page
 export const getAllBlogs = async (params?: {
   userId?: string;
+  // Pagination
   limit?: number;
   page?: number;
+  // Filters
+  search?: string;
+  category?: string;
+  status?: string;
+  // Sorting
+  sortBy?: "createdAt" | "title" | "likes";
+  sortOrder?: "asc" | "desc";
 }): Promise<ApiResponse> => {
   try {
     const { data } = await axios.get("/api/blogs", { params });
