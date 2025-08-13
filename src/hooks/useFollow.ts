@@ -1,11 +1,17 @@
 import { toggleFollowUser } from "@/api/follow"; // หรือ path ที่เก็บ toggleFollowUser
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+import toast from "react-hot-toast";
 
 export function useFollowUser(
   userId: string,
   initialFollowing: boolean,
   initialFollowerCount: number
 ) {
+  const { data: session } = useSession();
+  const router = useRouter();
+
   const [isFollowing, setIsFollowing] = useState(initialFollowing);
   const [followerCount, setFollowerCount] = useState(initialFollowerCount);
   const [isToggling, setIsToggling] = useState(false);
@@ -16,6 +22,10 @@ export function useFollowUser(
     setIsToggling(true);
 
     try {
+      if (!session) {
+        toast.error("Please sign in to follow");
+        router.push("/auth/sign-in");
+      }
       const response = await toggleFollowUser(userId);
 
       if (response.success) {

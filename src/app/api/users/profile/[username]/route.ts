@@ -4,12 +4,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import prisma from "@/lib/db";
 import { createSuccessResponse, createErrorResponse } from "@/lib/api-response";
 import {
-  IUserBadge,
-  IUserCount,
-  IUserProfile,
   IUserSettings,
-  IUserSocialLinks,
-  IUserStatus,
 } from "@/types/user";
 import { isValidImageType, MAX_FILE_SIZE } from "@/helpers/uploadFile";
 import cloudinary from "@/lib/cloudinary";
@@ -126,10 +121,8 @@ export async function PUT(
 
     // ดึงไฟล์รูป
     const profileImageFile = formData.get("profileImage") as File;
-    const coverImageFile = formData.get("coverImage") as File;
 
     let profileImageUrl: string | undefined;
-    let coverImageUrl: string | undefined;
 
     // อัพโหลดรูปโปรไฟล์ (ถ้ามี)
     if (profileImageFile && profileImageFile.size > 0) {
@@ -200,7 +193,6 @@ export async function PUT(
         ...(name && { name }),
         ...(bio !== undefined && { bio }),
         ...(profileImageUrl !== undefined && { profileImage: profileImageUrl }),
-        ...(coverImageUrl !== undefined && { coverImage: coverImageUrl }),
         ...(parsedSocialLinks && { socialLinks: parsedSocialLinks }),
         ...(location !== undefined && { location }),
         ...(jobTitle !== undefined && { jobTitle }),

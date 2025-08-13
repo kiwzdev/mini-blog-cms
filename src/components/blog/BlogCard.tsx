@@ -36,17 +36,19 @@ function BlogCard({ blog }: { blog: IBlogCard }) {
       <CardContent className="p-6">
         {/* Author & Date */}
         <div className="flex items-center gap-3 mb-4">
-          <Image
-            src={
-              blog.author.profileImage
-                ? getImageUrl(blog.author.profileImage)
-                : process.env.NEXT_PUBLIC_DEFAULT_POST_IMAGE!
-            }
-            alt={blog.author.name ?? process.env.NEXT_PUBLIC_DEFAULT_NAME!}
-            width={32}
-            height={32}
-            className="rounded-full"
-          />
+          <Link href={`/profile/${blog.author.username}`}>
+            <Image
+              src={
+                blog.author.profileImage
+                  ? getImageUrl(blog.author.profileImage)
+                  : process.env.NEXT_PUBLIC_DEFAULT_POST_IMAGE!
+              }
+              alt={blog.author.name ?? process.env.NEXT_PUBLIC_DEFAULT_NAME!}
+              width={32}
+              height={32}
+              className="rounded-full"
+            />
+          </Link>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate">{blog.author.name}</p>
             <div className="flex items-center gap-1 text-xs text-slate-500">

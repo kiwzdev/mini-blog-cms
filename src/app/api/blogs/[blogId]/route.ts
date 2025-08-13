@@ -4,7 +4,6 @@ import { authOptions } from "../../auth/[...nextauth]/route";
 import prisma from "@/lib/db";
 import { UpdateBlogInput } from "@/lib/validations/blogSchema";
 import { createErrorResponse, createSuccessResponse } from "@/lib/api-response";
-import { id } from "zod/v4/locales";
 
 type ParamsType = Promise<{ blogId: string }>;
 

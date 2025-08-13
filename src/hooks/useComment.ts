@@ -12,6 +12,8 @@ import {
   editUserComment,
   getUserComments,
 } from "@/api/comment";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 type CommentType = "blog" | "user";
 
@@ -55,6 +57,9 @@ export function useComment(
   targetId: string,
   options: UseCommentOptions = {}
 ) {
+  const { data: session } = useSession();
+  const router = useRouter();
+
   const [comments, setComments] = useState<IComment[]>(
     options.initialComments || []
   );
@@ -95,6 +100,11 @@ export function useComment(
 
     setIsSubmitting(true);
     try {
+      if (!session) {
+        toast.error("Please sign in to comment");
+        router.push("/auth/sign-in");
+      }
+
       const response = await api.create(targetId, newComment);
 
       if (response.success) {
@@ -199,5 +209,7 @@ export function useComment(
 }
 
 // Wrapper hooks
-export const useBlogComment = (blogId: string, options?: UseCommentOptions) => useComment("blog", blogId, options);
-export const useUserComment = (postId: string, options?: UseCommentOptions) => useComment("user", postId, options);
+export const useBlogComment = (blogId: string, options?: UseCommentOptions) =>
+  useComment("blog", blogId, options);
+export const useUserComment = (postId: string, options?: UseCommentOptions) =>
+  useComment("user", postId, options);

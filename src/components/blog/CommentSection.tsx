@@ -48,7 +48,7 @@ export function CommentSection({
     isSubmitting,
     isLoading,
     commentCount,
-    
+
     // Functions
     setNewComment,
     submitComment,
@@ -168,14 +168,11 @@ export function CommentSection({
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               className="min-h-[100px] resize-none"
-              disabled={!session?.user?.id}
             />
             <div className="flex justify-end">
               <Button
                 type="submit"
-                disabled={
-                  !newComment.trim() || isSubmitting || !session?.user?.id
-                }
+                disabled={!newComment.trim() || isSubmitting}
                 className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
               >
                 <Send className="w-4 h-4 mr-2" />
@@ -197,16 +194,12 @@ export function CommentSection({
           {displayComments.map((comment) => {
             // สร้าง useCommentLike สำหรับแต่ละ comment
             const CommentWithLike = () => {
-              const {
-                isLiked,
-                likeCount,
-                isLiking,
-                toggleLike,
-              } = useCommentLike(
-                comment.id,
-                comment.isLiked || false, // ต้องเพิ่มใน IComment type
-                comment._count?.likes || 0    // ต้องเพิ่มใน IComment type
-              );
+              const { isLiked, likeCount, isLiking, toggleLike } =
+                useCommentLike(
+                  comment.id,
+                  comment.isLiked || false, // ต้องเพิ่มใน IComment type
+                  comment._count?.likes || 0 // ต้องเพิ่มใน IComment type
+                );
 
               return (
                 <CommentItem

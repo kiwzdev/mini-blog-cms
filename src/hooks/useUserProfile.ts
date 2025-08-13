@@ -5,10 +5,6 @@ import toast from "react-hot-toast";
 import { createUpdatedUserFormData } from "@/helpers/formData";
 
 interface UseUserProfileOptions {
-  onSuccess?: (profile: IUserProfile) => void;
-  onError?: (error: string) => void;
-  onUpdateSuccess?: (profile: IUserProfile) => void;
-  onUpdateError?: (error: string) => void;
   autoFetch?: boolean; // เรียก API ทันทีหรือไม่
 }
 
@@ -22,10 +18,6 @@ export const useUserProfile = (
   const [error, setError] = useState<string | null>(null);
 
   const {
-    onSuccess,
-    onError,
-    onUpdateSuccess,
-    onUpdateError,
     autoFetch = true,
   } = options;
 
@@ -42,7 +34,6 @@ export const useUserProfile = (
       if (response.success) {
         const profileData = response.data as IUserProfile;
         setProfile(profileData);
-        onSuccess?.(profileData);
         return true;
       } else {
         throw new Error(response.error?.message || "Failed to fetch profile");
@@ -51,12 +42,11 @@ export const useUserProfile = (
       const errorMessage =
         error instanceof Error ? error.message : "Error fetching profile";
       setError(errorMessage);
-      onError?.(errorMessage);
       return false;
     } finally {
       setIsLoading(false);
     }
-  }, [username, onSuccess, onError]);
+  }, [username]);
 
   const updateProfile = useCallback(
     async (updateData: IUpdateProfileData) => {
@@ -81,7 +71,6 @@ export const useUserProfile = (
         if (response.success) {
           const updatedProfile = response.data as IUserProfile;
           setProfile(updatedProfile);
-          onUpdateSuccess?.(updatedProfile);
 
           toast.success("Profile updated successfully!", {
             id: "updateProfile",
@@ -96,7 +85,6 @@ export const useUserProfile = (
         const errorMessage =
           error instanceof Error ? error.message : "Error updating profile";
         setError(errorMessage);
-        onUpdateError?.(errorMessage);
 
         toast.error(errorMessage, { id: "updateProfile" });
         return false;
@@ -104,7 +92,7 @@ export const useUserProfile = (
         setIsUpdating(false);
       }
     },
-    [username, profile, onUpdateSuccess, onUpdateError]
+    [username, profile]
   );
 
   const updateSettingProfile = useCallback(
@@ -126,7 +114,6 @@ export const useUserProfile = (
         if (response.success) {
           const updatedProfile = response.data as IUserProfile;
           setProfile(updatedProfile);
-          onUpdateSuccess?.(updatedProfile);
 
           toast.success("Profile updated successfully!", {
             id: "updateProfile",
@@ -141,7 +128,6 @@ export const useUserProfile = (
         const errorMessage =
           error instanceof Error ? error.message : "Error updating profile";
         setError(errorMessage);
-        onUpdateError?.(errorMessage);
 
         toast.error(errorMessage, { id: "updateProfile" });
         return false;
@@ -149,7 +135,7 @@ export const useUserProfile = (
         setIsUpdating(false);
       }
     },
-    [username, profile, onUpdateSuccess, onUpdateError]
+    [username, profile]
   );
 
   // รีเฟรชโปรไฟล์

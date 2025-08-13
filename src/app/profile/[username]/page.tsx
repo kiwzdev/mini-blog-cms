@@ -1,9 +1,8 @@
-// app/profile/[username]/page.tsx
 "use client";
 import { Suspense, useEffect, useState } from "react";
 import { notFound, useParams, useRouter } from "next/navigation";
 import Image from "next/image";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import BlogCard from "@/components/blog/BlogCard";
 import BlogCardSkeleton from "@/components/blog/BlogCardSkeleton";
@@ -12,12 +11,9 @@ import { formatDate, formatDistanceToNow } from "@/lib/utils";
 import {
   Calendar,
   MapPin,
-  Link as LinkIcon,
   Github,
   Twitter,
   FileText,
-  Heart,
-  MessageCircle,
   Instagram,
   Linkedin,
   Globe,
@@ -31,6 +27,7 @@ import {
   Settings,
   Phone,
   Lock,
+  Mail,
 } from "lucide-react";
 import { IBlogCard } from "@/types/blog";
 import {
@@ -101,18 +98,6 @@ export default function ProfilePage() {
     // Helper functions
     isOwnProfile,
   } = useUserProfile(params.username || "", {
-    onSuccess: (profileData) => {
-      console.log("Profile loaded successfully:", profileData.name);
-    },
-    onError: (error) => {
-      console.error("Profile loading failed:", error);
-    },
-    onUpdateSuccess: (updatedProfile) => {
-      console.log("Profile updated successfully:", updatedProfile.name);
-    },
-    onUpdateError: (error) => {
-      console.error("Profile update failed:", error);
-    },
     autoFetch: true,
   });
 
@@ -392,7 +377,6 @@ export default function ProfilePage() {
                             </span>
                           </div>
                         )}
-
                       {/* Privacy Indicator for Private Profiles */}
                       {profile.settings?.profileVisibility === "private" &&
                         !isOwnProfile(session?.user?.username) && (
@@ -420,10 +404,24 @@ export default function ProfilePage() {
                           </div>
                         )}
 
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-4 h-4" />
-                          เข้าร่วมเมื่อ{" "}
-                          {formatDate(new Date(profile.createdAt))}
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center gap-1">
+                            <Calendar className="w-4 h-4" />
+                            เข้าร่วมเมื่อ{" "}
+                            {formatDate(new Date(profile.createdAt))}
+                          </div>
+                          {profile.phone ? (
+                            <div className="flex items-center gap-1">
+                              <Phone className="w-4 h-4" />
+                              {profile.phone}
+                            </div>
+                          ) : null}
+                          {profile.email ? (
+                            <div className="flex items-center gap-1">
+                              <Mail className="w-4 h-4" />
+                              {profile.email}
+                            </div>
+                          ) : null}
                         </div>
 
                         {profile.lastActiveAt && (

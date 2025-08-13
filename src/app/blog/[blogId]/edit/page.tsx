@@ -77,7 +77,7 @@ export default function EditBlogPage() {
     const fetchBlog = async () => {
       try {
         setLoading(true);
-        const response = await getBlogById(blogId);
+        const response = await getBlogById({blogId});
         console.log(response);
 
         if (response.success) {

@@ -21,7 +21,7 @@ export default function BlogBlogPage() {
       setError(null); // clear error ก่อน
 
       try {
-        const response = await getBlogById(blogId);
+        const response = await getBlogById({blogId});
 
         if (response.success) {
           setBlog(response.data as IBlog);

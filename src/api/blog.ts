@@ -27,9 +27,18 @@ export const getAllBlogs = async (params?: {
 };
 
 // For Blog detail page - Full Info
-export const getBlogById = async (blogId: string): Promise<ApiResponse> => {
+export const getBlogById = async (params?: {
+  blogId: string;
+  // Filters
+  search?: string;
+  category?: string;
+  status?: string;
+  // Sorting
+  sortBy?: "createdAt" | "title" | "likes";
+  sortOrder?: "asc" | "desc";
+}): Promise<ApiResponse> => {
   try {
-    const { data } = await axios.get(`/api/blogs/${blogId}`);
+    const { data } = await axios.get(`/api/blogs/${params?.blogId}`);
     return data;
   } catch (error) {
     return handleApiError(error);

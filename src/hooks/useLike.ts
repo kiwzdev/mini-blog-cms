@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { toggleLikeBlog, toggleLikeComment } from "@/api/like";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation"
+import toast from "react-hot-toast";
 
 type LikeType = "blog" | "comment";
 
@@ -20,6 +23,9 @@ export function useLike(
   initialLiked: boolean,
   initialCount: number
 ) {
+  const { data: session } = useSession();
+  const router = useRouter();
+
   const [isLiked, setIsLiked] = useState(initialLiked);
   const [likeCount, setLikeCount] = useState(initialCount);
   const [isLiking, setIsLiking] = useState(false);
@@ -30,6 +36,10 @@ export function useLike(
     setIsLiking(true);
 
     try {
+      if (!session) {
+        toast.error("Please sign in to like");
+        router.push("/auth/sign-in");
+      }
       const apiFunction = likeApiMap[type];
       const response = await apiFunction(targetId);
 
@@ -62,10 +72,10 @@ export const useBlogLike = (
   blogId: string,
   initialLiked: boolean,
   initialCount: number
-) => useLike('blog', blogId, initialLiked, initialCount);
+) => useLike("blog", blogId, initialLiked, initialCount);
 
 export const useCommentLike = (
   commentId: string,
   initialLiked: boolean,
   initialCount: number
-) => useLike('comment', commentId, initialLiked, initialCount);
+) => useLike("comment", commentId, initialLiked, initialCount);

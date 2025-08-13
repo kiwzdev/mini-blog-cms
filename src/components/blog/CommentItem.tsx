@@ -7,6 +7,7 @@ import { IComment } from "@/types/blog";
 import { useSession } from "next-auth/react";
 import { LikeButton } from "./LikeButton";
 import { getImageUrl } from "@/lib/image";
+import Link from "next/link";
 
 interface CommentItemProps {
   comment: IComment;
@@ -62,13 +63,19 @@ export function CommentItem({
 
   return (
     <div className="flex gap-4 p-4 bg-white/30 dark:bg-black/20 rounded-lg backdrop-blur-sm">
-      <Image
-        src={comment.author.profileImage ? getImageUrl(comment.author.profileImage) : process.env.NEXT_PUBLIC_DEFAULT_POST_IMAGE!}
-        alt={comment.author.name}
-        width={40}
-        height={40}
-        className="h-10 w-10 rounded-full flex-shrink-0"
-      />
+      <Link href={`/profile/${comment.author.username}`}>
+        <Image
+          src={
+            comment.author.profileImage
+              ? getImageUrl(comment.author.profileImage)
+              : process.env.NEXT_PUBLIC_DEFAULT_POST_IMAGE!
+          }
+          alt={comment.author.name}
+          width={40}
+          height={40}
+          className="h-10 w-10 rounded-full flex-shrink-0"
+        />
+      </Link>
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between mb-2">
