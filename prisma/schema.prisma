@@ -136,6 +136,7 @@ model BlogLike {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([blogId], name: "blog_like_blog_idx")
+  @@unique([blogId, userId])
   @@map("blog_likes")
 }
 
