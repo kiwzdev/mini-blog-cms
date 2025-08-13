@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { PrismaClient } from "@prisma/client";
 import { createErrorResponse, createSuccessResponse } from "@/lib/api-response";
 import prisma from "@/lib/db";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+    console.log(body)
     const { username, name, email, password } = body;
 
-    if (!username || !email || name || !password) {
+    if (!username || !email || !name || !password) {
       return createErrorResponse({
         code: "MISSING_FIELDS",
         message: "Missing required fields",
@@ -19,11 +19,9 @@ export async function POST(req: NextRequest) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const normalizedEmail = email.toLowerCase();
-
     // Check if email already exists
     const existingEmail = await prisma.user.findUnique({
-      where: { email: normalizedEmail },
+      where: { email },
     });
 
     if (existingEmail) {
@@ -57,7 +55,7 @@ export async function POST(req: NextRequest) {
       data: {
         username,
         name,
-        email: normalizedEmail,
+        email,
         password: hashedPassword,
       },
     });

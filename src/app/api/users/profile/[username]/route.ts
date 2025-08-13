@@ -22,7 +22,7 @@ export async function GET(
 
     const user = await prisma.user.findUnique({
       where: { username },
-      cacheStrategy: { ttl: 60 }, // FIX
+      cacheStrategy: { ttl: 60 },
       include: {
         _count: {
           select: {

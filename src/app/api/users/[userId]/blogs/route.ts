@@ -5,10 +5,11 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import prisma from "@/lib/db";
 import { createSuccessResponse, createErrorResponse } from "@/lib/api-response";
 import { IBlogCard } from "@/types/blog";
+import { Prisma } from "@prisma/client";
 
 type ParamsType = Promise<{ userId: string }>;
 
-// GET /api/users/[userId]/blogs - ดึง blog พร้อม pagination
+// GET /api/users/[userId]/blogs - ดึง blog พร้อม pagination และ filters
 export async function GET(
   request: NextRequest,
   { params }: { params: ParamsType }
@@ -18,9 +19,21 @@ export async function GET(
     const session = await getServerSession(authOptions);
     const { searchParams } = new URL(request.url);
 
+    // Pagination
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
     const skip = (page - 1) * limit;
+
+    // Filters
+    const category = searchParams.get("category");
+    const status = searchParams.get("status");
+    const search = searchParams.get("search");
+    const startDate = searchParams.get("start") || searchParams.get("dateRange[start]");
+    const endDate = searchParams.get("end") || searchParams.get("dateRange[end]");
+
+    // Sorting
+    const sortBy = searchParams.get("sortBy") || "createdAt";
+    const sortOrder = (searchParams.get("sortOrder") || "desc") as Prisma.SortOrder;
 
     // Check if user exists
     const userExists = await prisma.user.findUnique({
@@ -38,46 +51,111 @@ export async function GET(
 
     const isOwnProfile = session?.user?.id === userId;
 
-    const posts = await prisma.blog.findMany({
-      where: {
-        authorId: userId,
-        // Show only published posts unless it's own profile
-        ...(isOwnProfile ? {} : { published: true }),
-      },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            profileImage: true,
-            username: true,
-          },
-        },
-        _count: {
-          select: {
-            comments: true,
-            likes: true,
-          },
-        },
-        likes: session?.user?.id
-          ? {
-              where: { userId: session.user.id },
-              select: { id: true },
-            }
-          : false,
-      },
-      orderBy: { createdAt: "desc" },
-      skip,
-      take: limit,
-    });
+    // Build where clause
+    const whereClause: Prisma.BlogWhereInput = {
+      authorId: userId,
+    };
 
-    const totalPosts = await prisma.blog.count({
-      where: {
-        authorId: userId,
-        ...(isOwnProfile ? {} : { published: true }),
-      },
-    });
+    // Published filter
+    if (status && status !== "all") {
+      if (status === "published") {
+        whereClause.published = true;
+      } else if (status === "draft") {
+        whereClause.published = false;
+      }
+    } else {
+      // Default behavior: show only published unless own profile
+      if (!isOwnProfile) {
+        whereClause.published = true;
+      }
+    }
 
+    // Category filter
+    if (category && category !== "all" && category !== "") {
+      whereClause.category = category;
+    }
+
+    // Search filter
+    if (search && search.trim() !== "") {
+      whereClause.OR = [
+        { title: { contains: search.trim(), mode: "insensitive" } },
+        { excerpt: { contains: search.trim(), mode: "insensitive" } },
+      ];
+    }
+
+    // Date range filter
+    if (startDate || endDate) {
+      whereClause.createdAt = {};
+      if (startDate) {
+        whereClause.createdAt.gte = new Date(startDate);
+      }
+      if (endDate) {
+        const endDateTime = new Date(endDate);
+        endDateTime.setHours(23, 59, 59, 999); // End of day
+        whereClause.createdAt.lte = endDateTime;
+      }
+    }
+
+    // Build orderBy clause
+    let orderBy: Prisma.BlogOrderByWithRelationInput;
+    switch (sortBy) {
+      case "title":
+        orderBy = { title: sortOrder };
+        break;
+      case "updatedAt":
+        orderBy = { updatedAt: sortOrder };
+        break;
+      case "views":
+        orderBy = { views: sortOrder };
+        break;
+      case "likes":
+        orderBy = { likes: { _count: sortOrder } };
+        break;
+      case "comments":
+        orderBy = { comments: { _count: sortOrder } };
+        break;
+      case "createdAt":
+      default:
+        orderBy = { createdAt: sortOrder };
+        break;
+    }
+
+    // Fetch posts and count
+    const [posts, totalPosts] = await Promise.all([
+      prisma.blog.findMany({
+        where: whereClause,
+        include: {
+          author: {
+            select: {
+              id: true,
+              name: true,
+              profileImage: true,
+              username: true,
+            },
+          },
+          _count: {
+            select: {
+              comments: true,
+              likes: true,
+            },
+          },
+          likes: session?.user?.id
+            ? {
+                where: { userId: session.user.id },
+                select: { id: true },
+              }
+            : false,
+        },
+        orderBy,
+        skip,
+        take: limit,
+      }),
+      prisma.blog.count({
+        where: whereClause,
+      }),
+    ]);
+
+    // Transform data
     const responseData: IBlogCard[] = posts.map((post) => ({
       id: post.id,
       title: post.title,
@@ -86,7 +164,9 @@ export async function GET(
       coverImage: post.coverImage || undefined,
       published: post.published,
       createdAt: post.createdAt,
+      updatedAt: post.updatedAt,
       category: post.category || undefined,
+      views: post.views,
       isLiked: Array.isArray(post.likes) ? post.likes.length > 0 : false,
       author: {
         id: post.author.id,
@@ -103,15 +183,25 @@ export async function GET(
     return createSuccessResponse({
       data: responseData,
       message: "User blogs fetched successfully",
-      meta: {
+      meta:{
         page,
         limit,
         total: totalPosts,
-        totalPages: Math.ceil(totalPosts / limit),
-      },
+        pages: Math.ceil(totalPosts / limit),
+      }
     });
   } catch (error) {
     console.error("Error fetching user blogs:", error);
+
+    // Handle specific Prisma errors
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      return createErrorResponse({
+        code: "DATABASE_ERROR",
+        message: "Database query failed",
+        status: 500,
+      });
+    }
+
     return createErrorResponse({
       code: "FETCH_BLOGS_ERROR",
       message: "Error fetching user blogs",

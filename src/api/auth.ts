@@ -5,7 +5,7 @@ import axios from "axios";
 
 export const signUp = async (userData: SignUpData): Promise<ApiResponse> => {
   try {
-    const { data } = await axios.post("/api/auth/signup", userData);
+    const { data } = await axios.post("/api/auth/sign-up", userData);
     return data;
   } catch (error) {
     return handleApiError(error);

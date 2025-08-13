@@ -10,7 +10,7 @@ export interface Meta {
   page: number;
   limit: number;
   total: number;
-  totalPages: number;
+  pages: number;
 }
 
 export interface IError {

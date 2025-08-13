@@ -42,6 +42,7 @@ export const useUserProfile = (
       const errorMessage =
         error instanceof Error ? error.message : "Error fetching profile";
       setError(errorMessage);
+      toast.error(errorMessage);
       return false;
     } finally {
       setIsLoading(false);

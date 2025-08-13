@@ -38,7 +38,8 @@ export function useFollowUser(
         throw new Error(response.error.message);
       }
     } catch (error) {
-      console.error("Error toggling follow:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      toast.error(errorMessage);
     } finally {
       setIsToggling(false);
     }

@@ -1,20 +1,25 @@
 import { getUserBlogs } from "@/api/user";
-import { IBlogCard } from "@/types/blog";
-import { useState, useCallback} from "react";
+import { BLOGS_PAGE_LIMIT } from "@/lib/config";
+import { Filters, IBlogCard } from "@/types/blog";
+import { useState, useCallback, useEffect } from "react";
 
-// ปรับปรุง hook
 export const useUserBlogs = (userId: string) => {
   const [blogs, setBlogs] = useState<IBlogCard[]>([]);
+  const [filters, setFilters] = useState<Filters>({
+    category: "",
+    status: "",
+    search: "",
+    dateRange: { start: "", end: "" },
+  });
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [isLoadingBlogs, setIsLoadingBlogs] = useState(false);
-  const [isLoadingMore, setIsLoadingMore] = useState(false); // แยก loading state
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // ดึงข้อมูล blogs (ปรับปรุง)
   const fetchBlogs = useCallback(
-    async (page = 1, limit = 3, append = false) => {
+    async (page = 1, limit = 3, append = false, currentFilters = filters) => {
       if (!userId) return false;
 
       // Set appropriate loading state
@@ -29,7 +34,7 @@ export const useUserBlogs = (userId: string) => {
         const response = await getUserBlogs(userId, {
           page,
           limit,
-          // หมายเหตุ: signal ต้องเพิ่มใน getUserBlogs function
+          ...currentFilters,
         });
 
         if (response.success) {
@@ -39,7 +44,7 @@ export const useUserBlogs = (userId: string) => {
           // อัปเดทข้อมูล
           if (append) {
             setBlogs((prev) => {
-              // ป้องกันข้อมูลซ้ำ (optional: ตรวจสอบ ID)
+              // ป้องกันข้อมูลซ้ำ
               const existingIds = new Set(prev.map((blog) => blog.id));
               const uniqueNewBlogs = newBlogs.filter(
                 (blog) => !existingIds.has(blog.id)
@@ -53,8 +58,8 @@ export const useUserBlogs = (userId: string) => {
           // อัปเดท metadata
           if (meta) {
             setCurrentPage(meta.page);
-            setTotalPages(meta.totalPages);
-            setHasMore(meta.page < meta.totalPages);
+            setTotalPages(meta.pages);
+            setHasMore(meta.page < meta.pages);
           }
 
           return true;
@@ -68,7 +73,6 @@ export const useUserBlogs = (userId: string) => {
         if (!append) {
           setError(errorMessage);
         } else {
-          // สำหรับ loadMore error อาจแสดง toast แทน
           console.error("Load more error:", errorMessage);
         }
 
@@ -81,20 +85,55 @@ export const useUserBlogs = (userId: string) => {
         }
       }
     },
-    [userId]
+    [userId, filters]
   );
 
-  // โหลดเพิ่ม blogs (ปรับปรุง)
+  // Auto fetch เมื่อ filters เปลี่ยน (ยกเว้น search)
+  useEffect(() => {
+    if (userId) {
+      // สร้าง debounce สำหรับ search
+      const timeoutId = setTimeout(() => {
+        fetchBlogs(1, BLOGS_PAGE_LIMIT, false, filters);
+      }, filters.search ? 500 : 0); // Debounce 500ms สำหรับ search, ทันทีสำหรับ filters อื่น
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [userId, filters, fetchBlogs]);
+
+  // โหลดเพิ่ม blogs
   const loadMoreBlogs = useCallback(async () => {
-    // เพิ่มเงื่อนไขป้องกัน
     if (!hasMore || isLoadingBlogs || isLoadingMore) {
       return false;
     }
 
-    const success = await fetchBlogs(currentPage + 1, 3, true);
-
+    const success = await fetchBlogs(currentPage + 1, 3, true, filters);
     return success;
-  }, [hasMore, isLoadingBlogs, isLoadingMore, currentPage, fetchBlogs]);
+  }, [hasMore, isLoadingBlogs, isLoadingMore, currentPage, fetchBlogs, filters]);
+
+  // Filter handlers
+  const handleFilterChange = <K extends keyof Filters>(
+    key: K,
+    value: Filters[K]
+  ) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+    // Reset pagination เมื่อ filter เปลี่ยน
+    setCurrentPage(1);
+  };
+
+  const resetFilters = () => {
+    setFilters({
+      category: "",
+      status: "",
+      search: "",
+      dateRange: { start: "", end: "" },
+    });
+    setCurrentPage(1);
+  };
+
+  // Manual search (สำหรับกรณีที่ต้องการ search ทันที)
+  const handleSearch = () => {
+    fetchBlogs(1, BLOGS_PAGE_LIMIT, false, filters);
+  };
 
   // รีเซ็ตข้อมูล
   const resetBlogs = useCallback(() => {
@@ -108,8 +147,8 @@ export const useUserBlogs = (userId: string) => {
   // รีเฟรชข้อมูล
   const refreshBlogs = useCallback(async () => {
     resetBlogs();
-    return await fetchBlogs(1, 10, false);
-  }, [resetBlogs, fetchBlogs]);
+    return await fetchBlogs(1, BLOGS_PAGE_LIMIT, false, filters);
+  }, [resetBlogs, fetchBlogs, filters]);
 
   return {
     // Data
@@ -117,6 +156,12 @@ export const useUserBlogs = (userId: string) => {
     currentPage,
     totalPages,
     hasMore,
+
+    // Filters
+    filters,
+    handleFilterChange,
+    resetFilters,
+    handleSearch,
 
     // Loading states
     isLoadingBlogs,

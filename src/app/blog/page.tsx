@@ -15,6 +15,7 @@ import toast from "react-hot-toast";
 import { SmartNavigation } from "@/components/Navbar/SmartNavbar";
 import BlogFilters from "@/components/blog/BlogFilters";
 import { BLOGS_PAGE_LIMIT } from "@/lib/config";
+import { Meta } from "@/types/api";
 
 export default function BlogPage() {
   const [blogs, setBlogs] = useState<IBlogCard[] | null>(null);
@@ -33,29 +34,27 @@ export default function BlogPage() {
   }, [filters]);
 
   const handleSearch = () => {
-  fetchBlogs(1, filters); // fetch ด้วย current filters
-};
+    fetchBlogs(1, filters); // fetch ด้วย current filters
+  };
 
-const handleFilterChange = <K extends keyof Filters>(key: K, value: Filters[K]) => {
-  setFilters((prev) => ({ ...prev, [key]: value }));
-};
+  const handleFilterChange = <K extends keyof Filters>(
+    key: K,
+    value: Filters[K]
+  ) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+  };
 
-const resetFilters = () => {
-  setFilters({
-    category: "",
-    status: "",
-    search: "",
-    dateRange: { start: "", end: "" },
-  });
-};
+  const resetFilters = () => {
+    setFilters({
+      category: "",
+      status: "",
+      search: "",
+      dateRange: { start: "", end: "" },
+    });
+  };
 
   // Pagination state
-  const [pagination, setPagination] = useState<{
-    page: number;
-    limit: number;
-    total: number;
-    pages: number;
-  } | null>(null);
+  const [pagination, setPagination] = useState< Meta| null>(null);
 
   useEffect(() => {
     const fetchBlog = async () => {
@@ -82,7 +81,7 @@ const resetFilters = () => {
     });
     if (response.success) {
       setBlogs(response.data.blogs);
-      setPagination(response.data.pagination);
+      setPagination(response.meta as Meta);
     } else if (response.error) {
       throw new Error(response.error.message);
     }

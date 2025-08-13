@@ -5,7 +5,18 @@ import { handleApiError } from "@/lib/api-response";
 // For User profile page
 export const getUserBlogs = async (
   userId: string,
-  params: { limit?: number; page?: number }
+  params: {
+    // Pagination
+    limit?: number;
+    page?: number;
+    // Filters
+    search?: string;
+    category?: string;
+    status?: string;
+    // Sorting
+    sortBy?: "createdAt" | "title" | "likes";
+    sortOrder?: "asc" | "desc";
+  }
 ): Promise<ApiResponse> => {
   try {
     const { data } = await axios.get(`/api/users/${userId}/blogs`, {

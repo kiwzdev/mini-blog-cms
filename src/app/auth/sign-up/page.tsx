@@ -34,7 +34,15 @@ export default function SignUpPage() {
 
     try {
       // Validation
-      const result = userSchema.safeParse(formData);
+      const signUpData = {
+        name: formData.name,
+        username: formData.username.toLowerCase(),
+        email: formData.email.toLowerCase(),
+        password: formData.password,
+        confirmPassword: formData.confirmPassword,
+      }
+      
+      const result = userSchema.safeParse(signUpData);
       if (!result.success) {
         const { fieldErrors } = result.error.flatten();
         setFormErrors(fieldErrors);
@@ -42,7 +50,7 @@ export default function SignUpPage() {
       }
 
       // สร้างบัญชีผู้ใช้และส่งอีเมลยืนยันในคำขอเดียว
-      const res = await signUp(formData);
+      const res = await signUp(signUpData);
       if (res.success) {
         toast.success(
           "📩 สมัครเรียบร้อยแล้ว! โปรดตรวจสอบอีเมลของคุณเพื่อยืนยันบัญชี",
@@ -60,7 +68,7 @@ export default function SignUpPage() {
           duration: 3000,
           position: "top-center",
         });
-        router.push("/sign-in");
+        router.push("/auth/sign-in");
       } else if (res.error) {
         throw new Error(res.error.message);
       }

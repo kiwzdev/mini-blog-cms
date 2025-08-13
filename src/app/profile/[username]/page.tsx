@@ -30,13 +30,6 @@ import {
   Mail,
 } from "lucide-react";
 import { IBlogCard } from "@/types/blog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useSession } from "next-auth/react";
 import { useUserBlogs } from "@/hooks/useUserBlogs";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -47,9 +40,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/state/ErrorState";
 import { EditProfileModal } from "@/components/profile/edit/EditProfileModal";
 import { getCloudinaryUrl } from "@/lib/image/cloudinary";
-import { env } from "process";
 import { SmartNavigation } from "@/components/Navbar/SmartNavbar";
 import { SettingProfileModal } from "@/components/profile/setting/ProfileSettingModal";
+import BlogFilters from "@/components/blog/BlogFilters";
 
 type ProfilePageProps = {
   username: string;
@@ -61,18 +54,18 @@ export default function ProfilePage() {
   const router = useRouter();
 
   const { data: session } = useSession();
-  const [sortBy, setSortBy] = useState("latest");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSettingModalOpen, setIsSettingModalOpen] = useState(false);
-
-  // Custom Hooks
-  const { isFollowing, followerCount, isToggling, toggleFollow } =
-    useFollowUser(session?.user?.id || "", false, 0);
 
   const {
     // Data
     blogs,
     hasMore,
+    // Filters
+    filters,
+    handleFilterChange,
+    resetFilters,
+    handleSearch,
     // Loading states
     isLoadingBlogs,
     isLoadingMore,
@@ -119,14 +112,7 @@ export default function ProfilePage() {
       // ไม่ต้อง call fetchProfile เพราะ useUserProfile จะ autoFetch
       fetchBlogs();
     }
-  }, [params.username, sortBy]);
-
-  useEffect(() => {
-    if (profile && isFollowing !== undefined) {
-      // อัพเดต follower count เมื่อมีการ follow/unfollow
-      refreshProfile();
-    }
-  }, [isFollowing]);
+  }, [params.username]);
 
   // Handlers
   const handleFollowToggle = async () => {
@@ -138,13 +124,6 @@ export default function ProfilePage() {
     if (hasMore && !isLoadingMore) {
       loadMoreBlogs();
     }
-  };
-
-  const handleSortChange = (value: string) => {
-    setSortBy(value);
-    resetBlogs();
-    // FIX
-    // fetchBlogs({ sortBy: value });
   };
 
   const handleEditProfile = async (formData: IUpdateProfileData) => {
@@ -202,6 +181,17 @@ export default function ProfilePage() {
   const handleCreateBlog = () => {
     router.push("/blog/new");
   };
+
+  // Custom Hooks
+  const { isFollowing, followerCount, isToggling, toggleFollow } =
+    useFollowUser(profile?.id || "", false, 0);
+
+  useEffect(() => {
+    if (profile && isFollowing !== undefined) {
+      // อัพเดต follower count เมื่อมีการ follow/unfollow
+      refreshProfile();
+    }
+  }, [isFollowing]);
 
   // Loading State
   if (isLoading) {
@@ -649,17 +639,6 @@ export default function ProfilePage() {
                   <div className="text-sm text-slate-500">
                     {blogs.length} โพสต์
                   </div>
-                  {/* Filter/Sort options */}
-                  <Select value={sortBy} onValueChange={handleSortChange}>
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="latest">ล่าสุด</SelectItem>
-                      <SelectItem value="popular">ยอดนิยม</SelectItem>
-                      <SelectItem value="oldest">เก่าที่สุด</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
               </div>
 
@@ -671,6 +650,13 @@ export default function ProfilePage() {
                 </div>
               ) : blogs.length > 0 ? (
                 <>
+                  {/* Filter/Sort options */}
+                  <BlogFilters
+                    onSearch={handleSearch}
+                    filters={filters}
+                    onFilterChange={handleFilterChange}
+                    onResetFilters={resetFilters}
+                  />
                   {/* Blogs Grid */}
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <Suspense fallback={<BlogCardSkeleton />}>
@@ -679,7 +665,6 @@ export default function ProfilePage() {
                       ))}
                     </Suspense>
                   </div>
-
                   {/* Load More */}
                   {hasMore && (
                     <div className="text-center mt-12">

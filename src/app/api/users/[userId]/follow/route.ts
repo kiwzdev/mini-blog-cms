@@ -23,7 +23,8 @@ export async function POST(
     }
 
     const { userId } = await params;
-
+    console.log(`userId`,userId)
+    console.log("session.user.id",session.user.id)
     // Check if trying to follow themselves
     if (userId === session.user.id) {
       return createErrorResponse({

@@ -22,7 +22,7 @@ function CustomPrismaAdapter(p: typeof prisma): Adapter {
         name: data.name ?? "",
         email: data.email,
         emailVerified: data.emailVerified,
-        username: `user-${nanoid(6)}`, // Generate username
+        username: `user-${nanoid(6).toLowerCase()}`, // Generate username
         profileImage: data.image, // Map image to profileImage
       };
 

@@ -118,14 +118,14 @@ export async function GET(request: NextRequest) {
     return createSuccessResponse({
       data: {
         blogs: blogsWithLikeStatus,
-        pagination: {
-          page,
-          limit,
-          total,
-          pages: Math.ceil(total / limit),
-        },
       },
       message: "Blogs fetched successfully",
+      meta: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
     });
   } catch (error) {
     console.error("Error fetching blogs:", error);
