@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { getUserProfile, updateUser } from "@/api/user";
-import { IUpdateProfileData, IUserProfile } from "@/types/user";
+import { IUpdateProfileData, IUserProfile, IUserSettings } from "@/types/user";
 import toast from "react-hot-toast";
 import { createUpdatedUserFormData } from "@/helpers/formData";
 
@@ -107,6 +107,51 @@ export const useUserProfile = (
     [username, profile, onUpdateSuccess, onUpdateError]
   );
 
+  const updateSettingProfile = useCallback(
+    async (updateData: IUserSettings) => {
+      if (!username || !profile) return false;
+
+      setIsUpdating(true);
+      setError(null);
+
+      try {
+        toast.loading("Updating profile...", { id: "updateProfile" });
+
+        const updatedFormData = new FormData();
+        updatedFormData.append("settings", JSON.stringify(updateData));
+
+        // เรียก API ที่รับ FormData
+        const response = await updateUser(username, updatedFormData);
+
+        if (response.success) {
+          const updatedProfile = response.data as IUserProfile;
+          setProfile(updatedProfile);
+          onUpdateSuccess?.(updatedProfile);
+
+          toast.success("Profile updated successfully!", {
+            id: "updateProfile",
+          });
+          return true;
+        } else {
+          throw new Error(
+            response.error?.message || "Failed to update profile"
+          );
+        }
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : "Error updating profile";
+        setError(errorMessage);
+        onUpdateError?.(errorMessage);
+
+        toast.error(errorMessage, { id: "updateProfile" });
+        return false;
+      } finally {
+        setIsUpdating(false);
+      }
+    },
+    [username, profile, onUpdateSuccess, onUpdateError]
+  );
+
   // รีเฟรชโปรไฟล์
   const refreshProfile = useCallback(() => {
     return fetchProfile();
@@ -165,6 +210,7 @@ export const useUserProfile = (
     // Actions
     fetchProfile,
     updateProfile,
+    updateSettingProfile,
     refreshProfile,
     resetProfile,
 

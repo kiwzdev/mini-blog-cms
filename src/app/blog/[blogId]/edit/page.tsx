@@ -127,8 +127,10 @@ export default function EditBlogPage() {
       // Validation with Zod
       const validation = updateBlogSchema.safeParse(updatedBlog);
       if (!validation.success) {
-        console.log("Error updating blog:", validation.error.message);
-        throw new Error(validation.error.message);
+        const messages = validation.error.issues
+          .map((i) => i.message)
+          .join(",\n");
+        throw new Error(messages);
       }
 
       // Upload cover image

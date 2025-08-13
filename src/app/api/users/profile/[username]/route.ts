@@ -192,6 +192,7 @@ export async function PUT(
     // Parse JSON fields
     const parsedSocialLinks = socialLinks ? JSON.parse(socialLinks) : undefined;
     const parsedSettings = settings ? JSON.parse(settings) : undefined;
+    console.log(parsedSettings)
 
     const updatedUser = await prisma.user.update({
       where: { username: username },

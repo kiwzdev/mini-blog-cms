@@ -1,7 +1,6 @@
 import { ApiResponse } from "@/types/api";
 import axios from "axios";
 import { handleApiError } from "@/lib/api-response";
-import { IUpdateProfileData } from "@/types/user";
 
 // For User profile page
 export const getUserBlogs = async (

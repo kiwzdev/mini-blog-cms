@@ -1,7 +1,7 @@
-import { IUpdateProfileData } from "@/types/user";
+import { IUpdateProfileData, IUserSettings } from "@/types/user";
 
 
-export const createUpdatedUserFormData = (data: IUpdateProfileData): FormData => {
+export const createUpdatedUserFormData = (data: IUpdateProfileData | IUserSettings): FormData => {
   const formData = new FormData();
 
   Object.entries(data).forEach(([key, value]) => {

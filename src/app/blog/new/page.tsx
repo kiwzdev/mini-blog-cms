@@ -61,7 +61,10 @@ export default function NewBlogPage() {
       // Validation with Zod
       const validation = createBlogSchema.safeParse(createdBlog);
       if (!validation.success) {
-        throw new Error(validation.error.message);
+        const messages = validation.error.issues
+          .map((i) => i.message)
+          .join(",\n");
+        throw new Error(messages);
       }
 
       // Upload cover image

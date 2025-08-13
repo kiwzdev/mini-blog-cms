@@ -28,6 +28,9 @@ import {
   RefreshCw,
   Plus,
   Loader2,
+  Settings,
+  Phone,
+  Lock,
 } from "lucide-react";
 import { IBlogCard } from "@/types/blog";
 import {
@@ -41,7 +44,7 @@ import { useSession } from "next-auth/react";
 import { useUserBlogs } from "@/hooks/useUserBlogs";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useFollowUser } from "@/hooks/useFollow";
-import { IUpdateProfileData , IUserBadge } from "@/types/user";
+import { IUpdateProfileData, IUserBadge, IUserSettings } from "@/types/user";
 import { ProfileSkeleton } from "@/components/profile/ProfileSkeleton";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/state/ErrorState";
@@ -49,6 +52,7 @@ import { EditProfileModal } from "@/components/profile/edit/EditProfileModal";
 import { getCloudinaryUrl } from "@/lib/image/cloudinary";
 import { env } from "process";
 import { SmartNavigation } from "@/components/Navbar/SmartNavbar";
+import { SettingProfileModal } from "@/components/profile/setting/ProfileSettingModal";
 
 type ProfilePageProps = {
   username: string;
@@ -62,6 +66,7 @@ export default function ProfilePage() {
   const { data: session } = useSession();
   const [sortBy, setSortBy] = useState("latest");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isSettingModalOpen, setIsSettingModalOpen] = useState(false);
 
   // Custom Hooks
   const { isFollowing, followerCount, isToggling, toggleFollow } =
@@ -70,8 +75,6 @@ export default function ProfilePage() {
   const {
     // Data
     blogs,
-    currentPage,
-    totalPages,
     hasMore,
     // Loading states
     isLoadingBlogs,
@@ -93,6 +96,7 @@ export default function ProfilePage() {
     error: profileError,
     // Actions
     updateProfile,
+    updateSettingProfile,
     refreshProfile,
     // Helper functions
     isOwnProfile,
@@ -111,8 +115,9 @@ export default function ProfilePage() {
     },
     autoFetch: true,
   });
+
   useEffect(() => {
-    if (isEditModalOpen) {
+    if (isEditModalOpen || isSettingModalOpen) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
@@ -121,7 +126,7 @@ export default function ProfilePage() {
     return () => {
       document.body.style.overflow = "";
     };
-  }, [isEditModalOpen]);
+  }, [isEditModalOpen, isSettingModalOpen]);
 
   // Effects
   useEffect(() => {
@@ -157,7 +162,7 @@ export default function ProfilePage() {
     // fetchBlogs({ sortBy: value });
   };
 
-  const handleEditProfile = async (formData: IUpdateProfileData ) => {
+  const handleEditProfile = async (formData: IUpdateProfileData) => {
     try {
       // แยก socialLinks และ main fields
       const { socialLinks, ...mainFields } = formData;
@@ -169,7 +174,7 @@ export default function ProfilePage() {
         )
       );
 
-      const updateData: IUpdateProfileData  = {
+      const updateData: IUpdateProfileData = {
         ...mainFields,
         // แปลง empty string เป็น null สำหรับ main fields
         bio: mainFields.bio?.trim() || undefined,
@@ -189,6 +194,17 @@ export default function ProfilePage() {
       }
     } catch (error) {
       console.error("Error updating profile:", error);
+    }
+  };
+
+  const handleUpdateSettings = async (formData: IUserSettings) => {
+    try {
+      const success = await updateSettingProfile(formData);
+      if (success) {
+        setIsSettingModalOpen(false);
+      }
+    } catch (error) {
+      console.error("Error setting profile:", error);
     }
   };
 
@@ -263,16 +279,22 @@ export default function ProfilePage() {
                       <div className="relative w-32 h-32 md:w-40 md:h-40">
                         <Image
                           priority={false}
-                          src={profile?.profileImage ? getCloudinaryUrl(profile?.profileImage) : process.env.NEXT_PUBLIC_DEFAULT_PROFILE_IMAGE!}
+                          src={
+                            profile?.profileImage
+                              ? getCloudinaryUrl(profile?.profileImage)
+                              : process.env.NEXT_PUBLIC_DEFAULT_PROFILE_IMAGE!
+                          }
                           alt={profile.name}
                           fill
                           sizes="100%"
                           className="rounded-full  shadow-lg object-cover"
                         />
-                        {/* Online Status */}
-                        {profile.lastActiveAt && (
-                          <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 border-3 border-white rounded-full"></div>
-                        )}
+                        {/* Online Status - Hidden if profile is private and not own profile */}
+                        {profile.lastActiveAt &&
+                          (profile.settings?.profileVisibility === "public" ||
+                            isOwnProfile(session?.user?.username)) && (
+                            <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 border-3 border-white rounded-full"></div>
+                          )}
                         {/* Verification Badge */}
                         {profile.isVerified && (
                           <div className="absolute -top-1 -right-1 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
@@ -308,15 +330,26 @@ export default function ProfilePage() {
                     )}
 
                     {isOwnProfile(session?.user?.username) && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="min-w-[120px]"
-                        onClick={() => setIsEditModalOpen(true)}
-                      >
-                        <Edit className="w-4 h-4 mr-2" />
-                        แก้ไขโปรไฟล์
-                      </Button>
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="min-w-[120px]"
+                          onClick={() => setIsEditModalOpen(true)}
+                        >
+                          <Edit className="w-4 h-4 mr-2" />
+                          แก้ไขโปรไฟล์
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="min-w-[120px]"
+                          onClick={() => setIsSettingModalOpen(true)}
+                        >
+                          <Settings className="w-4 h-4 mr-2" />
+                          ตั้งค่าโปรไฟล์
+                        </Button>
+                      </>
                     )}
                   </div>
 
@@ -346,17 +379,28 @@ export default function ProfilePage() {
                         @{profile.username}
                       </p>
 
-                      {/* Job Title & Company */}
-                      {(profile.jobTitle || profile.company) && (
-                        <div className="flex items-center justify-center lg:justify-start gap-1 text-slate-600 dark:text-slate-400 mb-2">
-                          <Briefcase className="w-4 h-4" />
-                          <span>
-                            {profile.jobTitle}
-                            {profile.jobTitle && profile.company && " ที่ "}
-                            {profile.company}
-                          </span>
-                        </div>
-                      )}
+                      {/* Job Title & Company - Hidden if profile is private and not own profile */}
+                      {(profile.jobTitle || profile.company) &&
+                        (profile.settings?.profileVisibility === "public" ||
+                          isOwnProfile(session?.user?.username)) && (
+                          <div className="flex items-center justify-center lg:justify-start gap-1 text-slate-600 dark:text-slate-400 mb-2">
+                            <Briefcase className="w-4 h-4" />
+                            <span>
+                              {profile.jobTitle}
+                              {profile.jobTitle && profile.company && " ที่ "}
+                              {profile.company}
+                            </span>
+                          </div>
+                        )}
+
+                      {/* Privacy Indicator for Private Profiles */}
+                      {profile.settings?.profileVisibility === "private" &&
+                        !isOwnProfile(session?.user?.username) && (
+                          <div className="flex items-center justify-center lg:justify-start gap-1 text-amber-600 dark:text-amber-400 mb-2">
+                            <Lock className="w-4 h-4" />
+                            <span className="text-sm">โปรไฟล์ส่วนตัว</span>
+                          </div>
+                        )}
                     </div>
 
                     {profile.bio && (
@@ -365,32 +409,40 @@ export default function ProfilePage() {
                       </p>
                     )}
 
-                    {/* Meta Info */}
-                    <div className="flex flex-wrap justify-center lg:justify-start gap-4 text-sm text-slate-600 dark:text-slate-400">
-                      {profile.location && (
+                    {/* Meta Info - Hidden if profile is private and not own profile */}
+                    {(profile.settings?.profileVisibility === "public" ||
+                      isOwnProfile(session?.user?.username)) && (
+                      <div className="flex flex-wrap justify-center lg:justify-start gap-4 text-sm text-slate-600 dark:text-slate-400">
+                        {profile.location && (
+                          <div className="flex items-center gap-1">
+                            <MapPin className="w-4 h-4" />
+                            {profile.location}
+                          </div>
+                        )}
+
                         <div className="flex items-center gap-1">
-                          <MapPin className="w-4 h-4" />
-                          {profile.location}
+                          <Calendar className="w-4 h-4" />
+                          เข้าร่วมเมื่อ{" "}
+                          {formatDate(new Date(profile.createdAt))}
                         </div>
-                      )}
 
-                      <div className="flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />
-                        เข้าร่วมเมื่อ {formatDate(new Date(profile.createdAt))}
+                        {profile.lastActiveAt && (
+                          <div className="flex items-center gap-1 text-green-600">
+                            <div className="w-2 h-2 bg-green-500 rounded-full" />
+                            ออนไลน์ล่าสุด{" "}
+                            {formatDistanceToNow(
+                              new Date(profile.lastActiveAt)
+                            )}
+                          </div>
+                        )}
                       </div>
+                    )}
 
-                      {profile.lastActiveAt && (
-                        <div className="flex items-center gap-1 text-green-600">
-                          <div className="w-2 h-2 bg-green-500 rounded-full" />
-                          ออนไลน์ล่าสุด{" "}
-                          {formatDistanceToNow(new Date(profile.lastActiveAt))}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Social Links */}
+                    {/* Social Links - Hidden if profile is private and not own profile */}
                     {profile.socialLinks &&
-                      Object.keys(profile.socialLinks).length > 0 && (
+                      Object.keys(profile.socialLinks).length > 0 &&
+                      (profile.settings?.profileVisibility === "public" ||
+                        isOwnProfile(session?.user?.username)) && (
                         <div className="flex flex-wrap justify-center lg:justify-start gap-2">
                           {profile.socialLinks.website && (
                             <Button
@@ -478,10 +530,27 @@ export default function ProfilePage() {
                           )}
                         </div>
                       )}
+
+                    {/* Private Profile Message */}
+                    {profile.settings?.profileVisibility === "private" &&
+                      !isOwnProfile(session?.user?.username) && (
+                        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 text-center">
+                          <div className="flex items-center justify-center gap-2 text-amber-700 dark:text-amber-300">
+                            <Lock className="w-5 h-5" />
+                            <span className="font-medium">
+                              โปรไฟล์นี้เป็นส่วนตัว
+                            </span>
+                          </div>
+                          <p className="text-sm text-amber-600 dark:text-amber-400 mt-1">
+                            ข้อมูลรายละเอียดและกิจกรรมถูกจำกัดการเข้าถึง
+                          </p>
+                        </div>
+                      )}
                   </div>
 
-                  {/* Right: Stats */}
+                  {/* Right: Stats - Show limited stats for private profiles */}
                   <div className="flex lg:flex-col gap-6 lg:gap-4 justify-center lg:justify-start lg:min-w-[120px]">
+                    {/* Always show posts count */}
                     <div
                       className="text-center group cursor-pointer"
                       onClick={() => handleStatClick("blogs")}
@@ -494,42 +563,78 @@ export default function ProfilePage() {
                       </div>
                     </div>
 
-                    <div
-                      className="text-center group cursor-pointer"
-                      onClick={() => handleStatClick("followers")}
-                    >
-                      <div className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors">
-                        {followerCount ||
-                          profile._count.followers.toLocaleString()}
-                      </div>
-                      <div className="text-xs md:text-sm text-slate-500">
-                        Followers
-                      </div>
-                    </div>
+                    {/* Show followers/following only for public profiles or own profile */}
+                    {profile.settings?.profileVisibility === "public" ||
+                    isOwnProfile(session?.user?.username) ? (
+                      <>
+                        <div
+                          className="text-center group cursor-pointer"
+                          onClick={() => handleStatClick("followers")}
+                        >
+                          <div className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors">
+                            {followerCount ||
+                              profile._count.followers.toLocaleString()}
+                          </div>
+                          <div className="text-xs md:text-sm text-slate-500">
+                            Followers
+                          </div>
+                        </div>
 
-                    <div
-                      className="text-center group cursor-pointer"
-                      onClick={() => handleStatClick("following")}
-                    >
-                      <div className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors">
-                        {profile._count.following.toLocaleString()}
-                      </div>
-                      <div className="text-xs md:text-sm text-slate-500">
-                        Following
-                      </div>
-                    </div>
+                        <div
+                          className="text-center group cursor-pointer"
+                          onClick={() => handleStatClick("following")}
+                        >
+                          <div className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors">
+                            {profile._count.following.toLocaleString()}
+                          </div>
+                          <div className="text-xs md:text-sm text-slate-500">
+                            Following
+                          </div>
+                        </div>
 
-                    <div
-                      className="text-center group cursor-pointer"
-                      onClick={() => handleStatClick("likes")}
-                    >
-                      <div className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors">
-                        {profile._count.blogLikes.toLocaleString()}
-                      </div>
-                      <div className="text-xs md:text-sm text-slate-500">
-                        Likes
-                      </div>
-                    </div>
+                        <div
+                          className="text-center group cursor-pointer"
+                          onClick={() => handleStatClick("likes")}
+                        >
+                          <div className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors">
+                            {profile._count.blogLikes.toLocaleString()}
+                          </div>
+                          <div className="text-xs md:text-sm text-slate-500">
+                            Likes
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      /* Show placeholder for private profiles */
+                      <>
+                        <div className="text-center">
+                          <div className="text-xl md:text-2xl font-bold text-slate-400 dark:text-slate-600">
+                            <Lock className="w-5 h-5 mx-auto" />
+                          </div>
+                          <div className="text-xs md:text-sm text-slate-400">
+                            Followers
+                          </div>
+                        </div>
+
+                        <div className="text-center">
+                          <div className="text-xl md:text-2xl font-bold text-slate-400 dark:text-slate-600">
+                            <Lock className="w-5 h-5 mx-auto" />
+                          </div>
+                          <div className="text-xs md:text-sm text-slate-400">
+                            Following
+                          </div>
+                        </div>
+
+                        <div className="text-center">
+                          <div className="text-xl md:text-2xl font-bold text-slate-400 dark:text-slate-600">
+                            <Lock className="w-5 h-5 mx-auto" />
+                          </div>
+                          <div className="text-xs md:text-sm text-slate-400">
+                            Likes
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </CardContent>
@@ -562,7 +667,7 @@ export default function ProfilePage() {
 
               {isLoadingBlogs ? (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                  {[...[1, 2, 3, 4, 5, 6]].map((i) => (
                     <BlogCardSkeleton key={i} />
                   ))}
                 </div>
@@ -632,6 +737,13 @@ export default function ProfilePage() {
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
           onSave={handleEditProfile}
+          isUpdating={isUpdating}
+        />
+        <SettingProfileModal
+          settings={profile.settings || ({} as IUserSettings)}
+          isOpen={isSettingModalOpen}
+          onClose={() => setIsSettingModalOpen(false)}
+          onSave={handleUpdateSettings}
           isUpdating={isUpdating}
         />
       </>
