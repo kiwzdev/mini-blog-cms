@@ -3,6 +3,7 @@ import { getUserProfile, updateUser } from "@/api/user";
 import { IUpdateProfileData, IUserProfile, IUserSettings } from "@/types/user";
 import toast from "react-hot-toast";
 import { createUpdatedUserFormData } from "@/helpers/formData";
+import { profileUpdateSchema } from "@/lib/validations/profileUpdateSchema";
 
 interface UseUserProfileOptions {
   autoFetch?: boolean; // เรียก API ทันทีหรือไม่
@@ -17,9 +18,7 @@ export const useUserProfile = (
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const {
-    autoFetch = true,
-  } = options;
+  const { autoFetch = true } = options;
 
   // ดึงข้อมูลโปรไฟล์
   const fetchProfile = useCallback(async () => {
@@ -58,6 +57,17 @@ export const useUserProfile = (
 
       try {
         toast.loading("Updating profile...", { id: "updateProfile" });
+
+        console.log(updateData);
+        const validation = profileUpdateSchema.safeParse(updateData);
+        console.log(validation);
+
+        if (!validation.success) {
+          const messages = validation.error.issues
+            .map((i) => i.message)
+            .join(",\n");
+          throw new Error(messages);
+        }
 
         const updatedFormData = createUpdatedUserFormData(updateData);
 

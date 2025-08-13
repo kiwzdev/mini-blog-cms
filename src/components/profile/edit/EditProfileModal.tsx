@@ -1,11 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { getImageUrl } from "@/lib/image";
 import { getCloudinaryUrl } from "@/lib/image/cloudinary";
 import { IUpdateProfileData, IUserProfile } from "@/types/user";
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
-import { env } from "process";
 import { useEffect, useState } from "react";
 
 // Edit Profile Modal (Simple version - you might want to create a more complex one)
@@ -41,7 +39,6 @@ export const EditProfileModal = ({
       tiktok: profile?.socialLinks?.tiktok || "",
     },
   });
-  console.log(getCloudinaryUrl(profile?.profileImage || ""));
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");

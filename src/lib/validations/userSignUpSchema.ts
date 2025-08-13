@@ -1,7 +1,7 @@
 // lib/validations/userSchema.ts
 import { z } from "zod";
 
-export const userSchema = z
+export const userSignUpSchema = z
   .object({
     username: z
       .string()
