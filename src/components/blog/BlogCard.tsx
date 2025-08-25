@@ -34,7 +34,7 @@ function BlogCard({ blog }: { blog: IBlogCard }) {
         <div className="flex items-center gap-3 mb-4">
           <Link href={`/profile/${blog.author.username}`}>
             <Image
-              src={getImageUrl(blog.coverImage || "")}
+              src={getImageUrl(blog.author.profileImage || "")}
               alt={blog.author.name}
               width={32}
               height={32}
