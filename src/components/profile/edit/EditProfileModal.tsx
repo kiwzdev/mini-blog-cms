@@ -1,12 +1,105 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { getCloudinaryUrl } from "@/lib/image/cloudinary";
+import { getImageUrl } from "@/lib/image";
 import { IUpdateProfileData, IUserProfile } from "@/types/user";
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
-// Edit Profile Modal (Simple version - you might want to create a more complex one)
+// Input Component
+const FormInput = ({
+  label,
+  type = "text",
+  value,
+  onChange,
+  placeholder,
+  maxLength,
+  required = false,
+  rows,
+}: {
+  label: string;
+  type?: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  maxLength?: number;
+  required?: boolean;
+  rows?: number;
+}) => (
+  <div>
+    <label className="block text-sm font-medium mb-1">
+      {label} {required && <span className="text-red-500">*</span>}
+    </label>
+    {rows ? (
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full p-2 border rounded-md resize-none"
+        placeholder={placeholder}
+        maxLength={maxLength}
+        rows={rows}
+        required={required}
+      />
+    ) : (
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full p-2 border rounded-md"
+        placeholder={placeholder}
+        maxLength={maxLength}
+        required={required}
+      />
+    )}
+  </div>
+);
+
+// Profile Image Upload Component
+const ProfileImageUpload = ({
+  currentImage,
+  onImageSelect,
+  previewUrl,
+  isUpdating,
+}: {
+  currentImage?: string;
+  onImageSelect: (file: File) => void;
+  previewUrl?: string;
+  isUpdating: boolean;
+}) => (
+  <div className="flex justify-center mb-6">
+    <div className="relative">
+      <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden bg-gray-200 border-2 border-dashed border-gray-300 flex items-center justify-center">
+        <Image
+          src={previewUrl || getImageUrl(currentImage || "")}
+          alt="Profile"
+          className="w-full h-full object-cover rounded-full border-1"
+          fill
+        />
+      </div>
+      <div className="absolute -bottom-1 -right-1 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs cursor-pointer">
+        <label
+          htmlFor="upload"
+          className="cursor-pointer w-full h-full flex items-center justify-center"
+        >
+          +
+        </label>
+        <input
+          type="file"
+          accept="image/jpeg,image/png,image/jpg"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) onImageSelect(file);
+          }}
+          className="hidden"
+          id="upload"
+          disabled={isUpdating}
+        />
+      </div>
+    </div>
+  </div>
+);
+
+// Edit Profile Modal
 export const EditProfileModal = ({
   profile,
   isOpen,
@@ -24,10 +117,13 @@ export const EditProfileModal = ({
     name: profile?.name || "",
     bio: profile?.bio || "",
     profileImage: profile?.profileImage || "",
+    coverImage: profile?.coverImage || "",
     location: profile?.location || "",
     jobTitle: profile?.jobTitle || "",
     company: profile?.company || "",
     education: profile?.education || "",
+    email: profile?.email || "",
+    phone: profile?.phone || "",
     socialLinks: {
       website: profile?.socialLinks?.website || "",
       github: profile?.socialLinks?.github || "",
@@ -43,16 +139,12 @@ export const EditProfileModal = ({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
 
-  // Handle file selection
   const handleImageSelect = (file: File) => {
     setSelectedFile(file);
-
-    // สร้าง preview URL
     const url = URL.createObjectURL(file);
     setPreviewUrl(url);
   };
 
-  // Clean up preview URL
   useEffect(() => {
     return () => {
       if (previewUrl) {
@@ -63,20 +155,42 @@ export const EditProfileModal = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
     const updateData: IUpdateProfileData = {
       ...formData,
-      // ถ้ามี file ใหม่ให้ส่ง file, ถ้าไม่มีให้ส่ง string เดิม
       profileImage: selectedFile || formData.profileImage,
     };
-
     onSave(updateData);
   };
+
+  // ฟิลด์พื้นฐาน
+  const basicFields = [
+    { key: "name", label: "ชื่อ", required: true },
+    { key: "bio", label: "Bio", rows: 3, maxLength: 300 },
+    { key: "jobTitle", label: "ตำแหน่งงาน" },
+    { key: "company", label: "บริษัท" },
+    { key: "education", label: "การศึกษา", placeholder: "เช่น มหาวิทยาลัย, ปริญญา" },
+    { key: "location", label: "ที่อยู่" },
+    { key: "email", label: "อีเมล", type: "email" },
+    { key: "phone", label: "เบอร์โทรศัพท์", type: "tel" },
+    { key: "coverImage", label: "Cover Image URL", type: "url", placeholder: "https://" },
+  ];
+
+  // Social Links
+  const socialFields = [
+    { key: "website", label: "Website", placeholder: "https://" },
+    { key: "github", label: "GitHub", placeholder: "https://github.com/username" },
+    { key: "twitter", label: "Twitter", placeholder: "https://twitter.com/username" },
+    { key: "linkedin", label: "LinkedIn", placeholder: "https://linkedin.com/in/username" },
+    { key: "instagram", label: "Instagram", placeholder: "https://instagram.com/username" },
+    { key: "facebook", label: "Facebook", placeholder: "https://facebook.com/username" },
+    { key: "youtube", label: "YouTube", placeholder: "https://youtube.com/@username" },
+    { key: "tiktok", label: "TikTok", placeholder: "https://tiktok.com/@username" },
+  ];
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-white/50 bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
         <CardContent className="p-6">
           <div className="flex justify-between items-center mb-4">
@@ -87,282 +201,53 @@ export const EditProfileModal = ({
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Profile Image Upload */}
-            <div className="flex justify-center mb-6">
-              <div className="relative">
-                <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden bg-gray-200 border-2 border-dashed border-gray-300 flex items-center justify-center">
-                  {formData.profileImage ? (
-                    <Image
-                      src={
-                        previewUrl || getCloudinaryUrl(profile?.profileImage || "")
-                      }
-                      alt="Profile"
-                      className="w-full h-full object-cover rounded-full border-1"
-                      fill
-                    />
-                  ) : (
-                    <Image
-                      src={
-                        process.env.NEXT_PUBLIC_DEFAULT_PROFILE_IMAGE!
-                      }
-                      alt="Profile"
-                      className="w-full h-full object-cover rounded-full border-1"
-                      fill
-                    />
-                  )}
-                </div>
-                <div className="absolute -bottom-1 -right-1 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs cursor-pointer">
-                  <label
-                    htmlFor="upload"
-                    className="cursor-pointer w-full h-full flex items-center justify-center"
-                  >
-                    +
-                  </label>
-                  <input
-                    type="file"
-                    name="image"
-                    accept="image/jpeg,image/png,image/jpg"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        handleImageSelect(file);
-                      }
-                    }}
-                    className="hidden"
-                    id="upload"
-                    disabled={isUpdating}
+            <ProfileImageUpload
+              currentImage={profile?.profileImage}
+              onImageSelect={handleImageSelect}
+              previewUrl={previewUrl}
+              isUpdating={isUpdating}
+            />
+
+            {/* Basic Fields */}
+            {basicFields.map((field) => (
+              <FormInput
+                key={field.key}
+                label={field.label}
+                type={field.type}
+                value={formData[field.key as keyof typeof formData] as string}
+                onChange={(value) =>
+                  setFormData({ ...formData, [field.key]: value })
+                }
+                placeholder={field.placeholder}
+                maxLength={field.maxLength}
+                required={field.required}
+                rows={field.rows}
+              />
+            ))}
+
+            {/* Social Links Section */}
+            <div className="border-t pt-4">
+              <h4 className="font-medium mb-3">Social Links</h4>
+              <div className="space-y-3">
+                {socialFields.map((field) => (
+                  <FormInput
+                    key={field.key}
+                    label={field.label}
+                    type="url"
+                    value={formData.socialLinks[field.key as keyof typeof formData.socialLinks]}
+                    onChange={(value) =>
+                      setFormData({
+                        ...formData,
+                        socialLinks: {
+                          ...formData.socialLinks,
+                          [field.key]: value,
+                        },
+                      })
+                    }
+                    placeholder={field.placeholder}
                   />
-                </div>
+                ))}
               </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">ชื่อ</label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                className="w-full p-2 border rounded-md"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Bio</label>
-              <textarea
-                value={formData.bio}
-                onChange={(e) =>
-                  setFormData({ ...formData, bio: e.target.value })
-                }
-                className="w-full p-2 border rounded-md h-20"
-                maxLength={160}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                ตำแหน่งงาน
-              </label>
-              <input
-                type="text"
-                value={formData.jobTitle}
-                onChange={(e) =>
-                  setFormData({ ...formData, jobTitle: e.target.value })
-                }
-                className="w-full p-2 border rounded-md"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">บริษัท</label>
-              <input
-                type="text"
-                value={formData.company}
-                onChange={(e) =>
-                  setFormData({ ...formData, company: e.target.value })
-                }
-                className="w-full p-2 border rounded-md"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">การศึกษา</label>
-              <input
-                type="text"
-                value={formData.education}
-                onChange={(e) =>
-                  setFormData({ ...formData, education: e.target.value })
-                }
-                className="w-full p-2 border rounded-md"
-                placeholder="เช่น มหาวิทยาลัย, ปริญญา"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">ที่อยู่</label>
-              <input
-                type="text"
-                value={formData.location}
-                onChange={(e) =>
-                  setFormData({ ...formData, location: e.target.value })
-                }
-                className="w-full p-2 border rounded-md"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Website</label>
-              <input
-                type="url"
-                value={formData.socialLinks.website}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    socialLinks: {
-                      ...formData.socialLinks,
-                      website: e.target.value,
-                    },
-                  })
-                }
-                className="w-full p-2 border rounded-md"
-                placeholder="https://"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">GitHub</label>
-              <input
-                type="url"
-                value={formData.socialLinks.github}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    socialLinks: {
-                      ...formData.socialLinks,
-                      github: e.target.value,
-                    },
-                  })
-                }
-                className="w-full p-2 border rounded-md"
-                placeholder="https://github.com/username"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Twitter</label>
-              <input
-                type="url"
-                value={formData.socialLinks.twitter}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    socialLinks: {
-                      ...formData.socialLinks,
-                      twitter: e.target.value,
-                    },
-                  })
-                }
-                className="w-full p-2 border rounded-md"
-                placeholder="https://twitter.com/username"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">LinkedIn</label>
-              <input
-                type="url"
-                value={formData.socialLinks.linkedin}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    socialLinks: {
-                      ...formData.socialLinks,
-                      linkedin: e.target.value,
-                    },
-                  })
-                }
-                className="w-full p-2 border rounded-md"
-                placeholder="https://linkedin.com/in/username"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Instagram
-              </label>
-              <input
-                type="url"
-                value={formData.socialLinks.instagram}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    socialLinks: {
-                      ...formData.socialLinks,
-                      instagram: e.target.value,
-                    },
-                  })
-                }
-                className="w-full p-2 border rounded-md"
-                placeholder="https://instagram.com/username"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Facebook</label>
-              <input
-                type="url"
-                value={formData.socialLinks.facebook}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    socialLinks: {
-                      ...formData.socialLinks,
-                      facebook: e.target.value,
-                    },
-                  })
-                }
-                className="w-full p-2 border rounded-md"
-                placeholder="https://facebook.com/username"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">YouTube</label>
-              <input
-                type="url"
-                value={formData.socialLinks.youtube}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    socialLinks: {
-                      ...formData.socialLinks,
-                      youtube: e.target.value,
-                    },
-                  })
-                }
-                className="w-full p-2 border rounded-md"
-                placeholder="https://youtube.com/@username"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">TikTok</label>
-              <input
-                type="url"
-                value={formData.socialLinks.tiktok}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    socialLinks: {
-                      ...formData.socialLinks,
-                      tiktok: e.target.value,
-                    },
-                  })
-                }
-                className="w-full p-2 border rounded-md"
-                placeholder="https://tiktok.com/@username"
-              />
             </div>
 
             <div className="flex gap-4 pt-4">
@@ -371,6 +256,7 @@ export const EditProfileModal = ({
                 variant="outline"
                 onClick={onClose}
                 className="flex-1"
+                disabled={isUpdating}
               >
                 ยกเลิก
               </Button>

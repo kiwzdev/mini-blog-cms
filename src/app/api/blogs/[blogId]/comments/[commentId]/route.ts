@@ -11,6 +11,120 @@ type ParamsType = {
   commentId: string;
 };
 
+// Constants
+const MAX_COMMENT_LENGTH = 1000;
+const MIN_COMMENT_LENGTH = 1;
+
+// Shared comment select fields
+const COMMENT_SELECT_FIELDS = {
+  id: true,
+  content: true,
+  createdAt: true,
+  author: {
+    select: {
+      id: true,
+      name: true,
+      profileImage: true,
+      username: true,
+    },
+  },
+  _count: {
+    select: {
+      likes: true,
+    },
+  },
+} as const;
+
+// Helper function to validate comment content
+function validateCommentContent(content: string): string | null {
+  if (!content || typeof content !== 'string') {
+    return "Comment content is required";
+  }
+
+  const trimmedContent = content.trim();
+  
+  if (trimmedContent.length < MIN_COMMENT_LENGTH) {
+    return "Comment content cannot be empty";
+  }
+  
+  if (trimmedContent.length > MAX_COMMENT_LENGTH) {
+    return `Comment content must be less than ${MAX_COMMENT_LENGTH} characters`;
+  }
+
+  return null;
+}
+
+// Helper function to check comment ownership and permissions
+async function checkCommentPermissions(
+  commentId: string, 
+  blogId: string, 
+  userId: string, 
+  requireOwnership = false
+) {
+  const comment = await prisma.comment.findFirst({
+    where: {
+      id: commentId,
+      blogId: blogId,
+    },
+    select: {
+      id: true,
+      authorId: true,
+      blog: {
+        select: {
+          authorId: true,
+        },
+      },
+    },
+  });
+
+  if (!comment) {
+    return { error: "COMMENT_NOT_FOUND", message: "Comment not found", status: 404 };
+  }
+
+  const isCommentAuthor = comment.authorId === userId;
+  const isBlogOwner = comment.blog?.authorId === userId;
+
+  if (requireOwnership && !isCommentAuthor) {
+    return { 
+      error: "FORBIDDEN", 
+      message: "You can only edit your own comments", 
+      status: 403 
+    };
+  }
+
+  if (!requireOwnership && !isCommentAuthor && !isBlogOwner) {
+    return { 
+      error: "FORBIDDEN", 
+      message: "You can only delete your own comments or comments on your blogs", 
+      status: 403 
+    };
+  }
+
+  return { comment, isCommentAuthor, isBlogOwner };
+}
+
+// Helper function to transform comment to IComment interface
+function transformCommentResponse(
+  comment: any, 
+  isLiked: boolean = false
+): IComment {
+  return {
+    id: comment.id,
+    content: comment.content,
+    createdAt: comment.createdAt.toISOString(),
+    isLiked,
+    author: {
+      id: comment.author.id,
+      name: comment.author.name || "",
+      profileImage: comment.author.profileImage,
+      username: comment.author.username || "",
+    },
+    _count: {
+      likes: comment._count.likes,
+    },
+  };
+}
+
 // PUT /api/blogs/{blogId}/comments/{commentId} - Edit a comment
 export async function PUT(
   request: NextRequest,
@@ -31,103 +145,69 @@ export async function PUT(
     const body = await request.json();
     const { content } = body;
 
-    if (!content || content.trim().length === 0) {
+    // Validate comment content
+    const validationError = validateCommentContent(content);
+    if (validationError) {
       return createErrorResponse({
-        code: "INVALID_CONTENT",
-        message: "Comment content is required",
+        code: "VALIDATION_ERROR",
+        message: validationError,
         status: 400,
       });
     }
 
-    if (content.trim().length > 1000) {
+    // Check permissions (only comment author can edit)
+    const permissionCheck = await checkCommentPermissions(
+      commentId, 
+      blogId, 
+      session.user.id, 
+      true // requireOwnership = true for editing
+    );
+
+    if ('error' in permissionCheck) {
       return createErrorResponse({
-        code: "CONTENT_TOO_LONG",
-        message: "Comment content must be less than 1000 characters",
-        status: 400,
+        code: permissionCheck.error as string,
+        message: permissionCheck.message as string,
+        status: permissionCheck.status,
       });
     }
 
-    // Check if comment exists and belongs to the blog
-    const existingComment = await prisma.comment.findFirst({
-      where: {
-        id: commentId,
-        blogId: blogId,
-      },
-    });
-
-    if (!existingComment) {
-      return createErrorResponse({
-        code: "COMMENT_NOT_FOUND",
-        message: "Comment not found",
-        status: 404,
-      });
-    }
-
-    // Check if user is the author of the comment
-    if (existingComment.authorId !== session.user.id) {
-      return createErrorResponse({
-        code: "FORBIDDEN",
-        message: "You can only edit your own comments",
-        status: 403,
-      });
-    }
-
-    // Update comment
-    const updatedComment = await prisma.comment.update({
-      where: { id: commentId },
-      data: {
-        content: content.trim(),
-      },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            profileImage: true,
-            username: true,
-          },
+    // Update comment with optimistic concurrency check
+    const [updatedComment, userLike] = await Promise.all([
+      prisma.comment.update({
+        where: { id: commentId },
+        data: {
+          content: content.trim(),
+          updatedAt: new Date(),
         },
-        likes: {
-          where: { 
-            userId: session.user.id,
-            commentId: commentId
-          },
-          select: { id: true },
+        select: {
+          ...COMMENT_SELECT_FIELDS,
+          updatedAt: true,
         },
-        _count: {
-          select: {
-            likes: true,
-          },
+      }),
+      // Check if user liked this comment
+      prisma.commentLike.findFirst({
+        where: {
+          userId: session.user.id,
+          commentId: commentId,
         },
-      },
-    });
+        select: { id: true },
+      }),
+    ]);
 
-    // Transform to IComment interface
-    const commentResponse: IComment = {
-      id: updatedComment.id,
-      content: updatedComment.content,
-      createdAt: updatedComment.createdAt.toISOString(),
-      isLiked: updatedComment.likes.length > 0,
-      author: {
-        id: updatedComment.author.id,
-        name: updatedComment.author.name || "",
-        profileImage: updatedComment.author.profileImage,
-        username: updatedComment.author.username || "",
-      },
-      _count: {
-        likes: updatedComment._count.likes,
-      },
-    };
+    const commentResponse = transformCommentResponse(
+      updatedComment, 
+      !!userLike
+    );
 
     return createSuccessResponse({
-      data: commentResponse,
+      data: { comment: commentResponse },
       message: "Comment updated successfully",
     });
   } catch (error) {
     console.error("Error updating comment:", error);
     return createErrorResponse({
       code: "UPDATE_COMMENT_ERROR",
-      message: "Error updating comment",
+      message: "Failed to update comment",
       status: 500,
     });
   }
@@ -151,50 +231,32 @@ export async function DELETE(
 
     const { blogId, commentId } = await params;
 
-    // Check if comment exists and belongs to the blog
-    const existingComment = await prisma.comment.findFirst({
-      where: {
-        id: commentId,
-        blogId: blogId,
-      },
-      include: {
-        blog: {
-          select: {
-            authorId: true,
-          },
-        },
-      },
-    });
+    // Check permissions (comment author OR blog owner can delete)
+    const permissionCheck = await checkCommentPermissions(
+      commentId, 
+      blogId, 
+      session.user.id, 
+      false // requireOwnership = false for deletion
+    );
 
-    if (!existingComment) {
+    if ('error' in permissionCheck) {
       return createErrorResponse({
-        code: "COMMENT_NOT_FOUND",
-        message: "Comment not found",
-        status: 404,
+        code: permissionCheck.error as string,
+        message: permissionCheck.message as string,
+        status: permissionCheck.status,
       });
     }
 
-    // Check if user is the author of the comment or the blog owner
-    const isCommentAuthor = existingComment.authorId === session.user.id;
-    const isBlogOwner = existingComment.blog?.authorId === session.user.id;
-
-    if (!isCommentAuthor && !isBlogOwner) {
-      return createErrorResponse({
-        code: "FORBIDDEN",
-        message: "You can only delete your own comments or comments on your blogs",
-        status: 403,
-      });
-    }
-
-    // Delete comment (likes will be deleted automatically due to cascade)
+    // Delete comment (cascade delete will handle related records)
     await prisma.comment.delete({
       where: { id: commentId },
     });
 
     return createSuccessResponse({
       data: { 
-        id: commentId,
-        message: "Comment deleted successfully" 
+        commentId,
+        blogId,
+        deletedAt: new Date().toISOString(),
       },
       message: "Comment deleted successfully",
     });
@@ -202,7 +264,7 @@ export async function DELETE(
     console.error("Error deleting comment:", error);
     return createErrorResponse({
       code: "DELETE_COMMENT_ERROR",
-      message: "Error deleting comment",
+      message: "Failed to delete comment",
       status: 500,
     });
   }

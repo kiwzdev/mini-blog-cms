@@ -13,22 +13,21 @@ import { Filters } from "@/types/blog";
 export function CategorySelect({
   category,
   onFilterChange,
-  onSearch,
 }: {
   category: string;
-  onFilterChange:  <K extends keyof Filters>(key: K, value: Filters[K]) => void
-  onSearch: () => void;
+  onFilterChange: <K extends keyof Filters>(key: K, value: Filters[K]) => void;
 }) {
   const handleChange = (value: string) => {
     onFilterChange("category", value);
-    onSearch();
   };
 
   return (
     <Select value={category} onValueChange={handleChange}>
-      <SelectTrigger className="w-full px-3 py-2.5 border border-gray-300 rounded-lg 
+      <SelectTrigger
+        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg 
                                 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400
-                                text-gray-800 bg-white transition-all">
+                                text-gray-800 bg-white transition-all"
+      >
         <SelectValue placeholder="Category" />
       </SelectTrigger>
       <SelectContent className="z-50" side="bottom" sideOffset={5}>

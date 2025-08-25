@@ -6,6 +6,7 @@ import { IBlog } from "@/types/blog";
 import Loading from "@/components/Loading";
 import { useLoading } from "@/stores/useLoadingStore";
 import { BlogContent } from "@/components/blog/BlogContent";
+import { SmartNavigation } from "@/components/Navbar/SmartNavbar";
 
 export default function BlogBlogPage() {
   const params = useParams<{ blogId: string }>();
@@ -21,10 +22,10 @@ export default function BlogBlogPage() {
       setError(null); // clear error ก่อน
 
       try {
-        const response = await getBlogById({blogId});
+        const response = await getBlogById(blogId);
 
         if (response.success) {
-          setBlog(response.data as IBlog);
+          setBlog(response.data.blog as IBlog);
         } else if (response.error) {
           throw new Error(response.error.message);
         }
@@ -44,5 +45,11 @@ export default function BlogBlogPage() {
   if (isLoading) return <Loading />;
   if (!blog && !error) return <Loading />;
   if (error === "Blog not found" || !blog) return notFound();
-  else return <BlogContent blog={blog} />;
+  else
+    return (
+      <>
+        <SmartNavigation />
+        <BlogContent blog={blog} />;
+      </>
+    );
 }

@@ -6,110 +6,142 @@ import { ICreateBlogInput } from "@/types/blog";
 import { createErrorResponse, createSuccessResponse } from "@/lib/api-response";
 import { Prisma } from "@prisma/client";
 
+// Constants
+const DEFAULT_LIMIT = 10;
+const DEFAULT_PAGE = 1;
+const MAX_LIMIT = 100;
+
+// Helper function to parse and validate pagination params
+function parsePaginationParams(searchParams: URLSearchParams) {
+  const limit = Math.min(
+    parseInt(searchParams.get("limit") || String(DEFAULT_LIMIT)),
+    MAX_LIMIT
+  );
+  const page = Math.max(
+    parseInt(searchParams.get("page") || String(DEFAULT_PAGE)),
+    1
+  );
+  const skip = (page - 1) * limit;
+
+  return { limit, page, skip };
+}
+
+// Helper function to build where clause
+function buildWhereClause(
+  searchParams: URLSearchParams
+): Prisma.BlogWhereInput {
+  const search = searchParams.get("search")?.trim();
+  const category = searchParams.get("category")?.trim();
+  const status = searchParams.get("status")?.trim();
+
+  const whereClause: Prisma.BlogWhereInput = {};
+
+  // Default to published blogs only unless status is explicitly set
+  if (!status || status === "all") {
+    whereClause.published = true;
+  } else if (status === "published") {
+    whereClause.published = true;
+  } else if (status === "draft") {
+    whereClause.published = false;
+  }
+
+  // Search in title and excerpt
+  if (search) {
+    whereClause.OR = [
+      { title: { contains: search, mode: "insensitive" } },
+      { excerpt: { contains: search, mode: "insensitive" } },
+    ];
+  }
+
+  // Filter by category
+  if (category && category !== "all") {
+    whereClause.category = category;
+  }
+
+  return whereClause;
+}
+
+// Helper function to build order by clause
+function buildOrderByClause(
+  searchParams: URLSearchParams
+): Prisma.BlogOrderByWithRelationInput {
+  const sortBy = searchParams.get("sortBy") || "createdAt";
+  const sortOrder = (searchParams.get("sortOrder") ||
+    "desc") as Prisma.SortOrder;
+
+  switch (sortBy) {
+    case "likes":
+      return { likes: { _count: sortOrder } };
+    case "title":
+      return { title: sortOrder };
+    case "createdAt":
+    default:
+      return { createdAt: sortOrder };
+  }
+}
+
+// Shared blog select fields
+const BLOG_SELECT_FIELDS = {
+  id: true,
+  title: true,
+  slug: true,
+  excerpt: true,
+  coverImage: true,
+  createdAt: true,
+  category: true,
+  author: {
+    select: {
+      id: true,
+      name: true,
+      profileImage: true,
+      username: true,
+    },
+  },
+  _count: {
+    select: {
+      comments: true,
+      likes: true,
+    },
+  },
+} as const;
+
 // GET /api/blogs - Get all blogs with pagination and filters
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     const { searchParams } = new URL(request.url);
 
-    // Pagination params
-    const limit = parseInt(searchParams.get("limit") || "10");
-    const page = parseInt(searchParams.get("page") || "1");
-    const skip = (page - 1) * limit;
+    const { limit, page, skip } = parsePaginationParams(searchParams);
+    const whereClause = buildWhereClause(searchParams);
+    const orderBy = buildOrderByClause(searchParams);
 
-    // Filters params
-    const search = searchParams.get("search");
-    const category = searchParams.get("category");
-    const status = searchParams.get("status");
-
-    // Sorting params
-    const sortBy = searchParams.get("sortBy") || "createdAt";
-    const sortOrder = searchParams.get("sortOrder") || "desc";
-
-    // Type-safe approach
-    const whereClause: Prisma.BlogWhereInput = {
-      published: true,
-    };
-
-    if (search) {
-      whereClause.OR = [
-        { title: { contains: search, mode: "insensitive" } },
-        { excerpt: { contains: search, mode: "insensitive" } },
-      ];
-    }
-
-    if (category && category !== "all") {
-      whereClause.category = category;
-    }
-
-    if (status && status !== "all") {
-      if (status === "published") {
-        whereClause.published = true; // Published
-      } else if (status === "draft") {
-        whereClause.published = false; // Unpublished
-      }
-    }
-
-    // Type-safe orderBy
-    let orderBy: Prisma.BlogOrderByWithRelationInput;
-    switch (sortBy) {
-      case "likes":
-        orderBy = { likes: { _count: sortOrder as Prisma.SortOrder } };
-        break;
-      case "createdAt":
-      default:
-        orderBy = { createdAt: sortOrder as Prisma.SortOrder };
-        break;
-    }
-
-    // 1. ใช้ Promise.all เพื่อ parallel queries
+    // Parallel queries for blogs and total count
     const [blogs, total] = await Promise.all([
       prisma.blog.findMany({
         where: whereClause,
         skip,
         take: limit,
         orderBy,
-        select: {
-          id: true,
-          title: true,
-          slug: true,
-          excerpt: true,
-          coverImage: true,
-          createdAt: true,
-          category: true,
-          author: {
-            select: {
-              id: true,
-              name: true,
-              profileImage: true,
-              username: true,
-            },
-          },
-          _count: {
-            select: {
-              comments: true,
-              likes: true,
-            },
-          },
-        },
+        select: BLOG_SELECT_FIELDS,
       }),
       prisma.blog.count({ where: whereClause }),
     ]);
 
-    // 2. แยก query likes ถ้า user login
-    let likedBlogIds: string[] = [];
-    if (session?.user?.id && blogs.length > 0) {
-      const likes = await prisma.blogLike.findMany({
-        where: {
-          userId: session.user.id,
-          blogId: { in: blogs.map((blog) => blog.id) },
-        },
-        select: { blogId: true },
-      });
-      likedBlogIds = likes.map((like) => like.blogId);
-    }
+    // Get liked blog IDs for authenticated users
+    const likedBlogIds =
+      session?.user?.id && blogs.length > 0
+        ? await prisma.blogLike
+            .findMany({
+              where: {
+                userId: session.user.id,
+                blogId: { in: blogs.map((blog) => blog.id) },
+              },
+              select: { blogId: true },
+            })
+            .then((likes) => likes.map((like) => like.blogId))
+        : [];
 
-    // 3. Map isLiked ให้กับ blogs
+    // Add isLiked status to blogs
     const blogsWithLikeStatus = blogs.map((blog) => ({
       ...blog,
       isLiked: likedBlogIds.includes(blog.id),
@@ -117,15 +149,15 @@ export async function GET(request: NextRequest) {
 
     return createSuccessResponse({
       data: {
-        blogs: blogsWithLikeStatus,
+        blogs: blogsWithLikeStatus
       },
       message: "Blogs fetched successfully",
-      meta: {
+      meta:{
+        total,
         page,
         limit,
-        total,
-        pages: Math.ceil(total / limit),
-      },
+        pages: Math.ceil(total / limit)
+      }
     });
   } catch (error) {
     console.error("Error fetching blogs:", error);
@@ -140,7 +172,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session) {
+
+    if (!session?.user?.id) {
       return createErrorResponse({
         code: "UNAUTHORIZED",
         message: "You must be logged in to create a blog",
@@ -149,6 +182,16 @@ export async function POST(request: NextRequest) {
     }
 
     const body: ICreateBlogInput = await request.json();
+
+    // Validate required fields
+    if (!body.title?.trim() || !body.content?.trim() || !body.slug?.trim()) {
+      return createErrorResponse({
+        code: "VALIDATION_ERROR",
+        message: "Title, content, and slug are required",
+        status: 400,
+      });
+    }
+
     const {
       title,
       content,
@@ -156,46 +199,65 @@ export async function POST(request: NextRequest) {
       excerpt,
       slug,
       coverImage,
-      published,
+      published = false, // Default to draft
       category,
     } = body;
 
+    // Check if slug already exists
+    const existingBlog = await prisma.blog.findUnique({
+      where: { slug },
+      select: { id: true },
+    });
+
+    if (existingBlog) {
+      return createErrorResponse({
+        code: "SLUG_EXISTS",
+        message: "A blog with this slug already exists",
+        status: 409,
+      });
+    }
+
     const blog = await prisma.blog.create({
       data: {
-        title,
-        slug,
+        title: title.trim(),
+        slug: slug.trim(),
         content,
         contentType,
-        excerpt,
+        excerpt: excerpt?.trim(),
         coverImage,
         published,
         category,
-        authorId: session?.user.id,
+        authorId: session.user.id,
       },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            profileImage: true,
-            username: true,
-          },
-        },
-        _count: {
-          select: {
-            comments: true,
-            likes: true,
-          },
-        },
+      select: {
+        ...BLOG_SELECT_FIELDS,
+        content: true,
+        contentType: true,
+        published: true,
+        updatedAt: true,
       },
     });
 
     return createSuccessResponse({
-      data: blog,
+      data: {
+        blogs: blog,
+      },
       message: "Blog created successfully",
     });
   } catch (error) {
     console.error("Error creating blog:", error);
+
+    // Handle Prisma errors
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === "P2002") {
+        return createErrorResponse({
+          code: "DUPLICATE_ENTRY",
+          message: "A blog with this slug already exists",
+          status: 409,
+        });
+      }
+    }
+
     return createErrorResponse({
       code: "CREATE_BLOG_ERROR",
       message: "Failed to create blog",

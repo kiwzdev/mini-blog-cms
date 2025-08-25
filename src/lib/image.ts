@@ -1,4 +1,5 @@
 import { getCloudinaryUrl } from "@/lib/image/cloudinary";
+import { DEFAULT_PROFILE_IMAGE } from "./config";
 
 function normalizeUrl(url: string) {
   if (!url.startsWith("http")) {
@@ -21,6 +22,7 @@ export function isValidHttpUrl(url: string): boolean {
 
 export function getImageUrl(url: string): string {
   // ตรวจสอบว่าเป็น full URL หรือไม่
+  if (url === "") return DEFAULT_PROFILE_IMAGE;
   if (isValidHttpUrl(url)) {
     return url;
   }

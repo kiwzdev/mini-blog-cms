@@ -31,6 +31,8 @@ export interface IUserProfile {
   lastActiveAt?: Date;
   isVerified?: Date;
 
+  isFollowing?: boolean;
+
   // Professional info
   jobTitle?: string;
   company?: string;
@@ -91,10 +93,10 @@ export interface IUpdateProfileData {
   profileImage?: string | File;
   coverImage?: string;
   location?: string;
-  website?: string;
   jobTitle?: string;
   company?: string;
   education?: string;
+  email?: string;
   phone?: string;
   socialLinks?: IUserProfile['socialLinks'];
 }

@@ -40,11 +40,7 @@ export function BlogContent({ blog }: { blog: IBlog }) {
           {/* Cover Image */}
           <div className="relative h-64 md:h-96 rounded-2xl overflow-hidden mb-8">
             <Image
-              src={
-                blog.coverImage
-                  ? getImageUrl(blog.coverImage)
-                  : process.env.NEXT_PUBLIC_DEFAULT_COVER_IMAGE!
-              }
+              src={getImageUrl(blog.coverImage || "")}
               alt={blog.title}
               fill
               className="object-cover"
@@ -79,17 +75,13 @@ export function BlogContent({ blog }: { blog: IBlog }) {
           <div className="flex flex-wrap items-center gap-6 text-slate-600 dark:text-slate-400 mb-8">
             <div className="flex items-center gap-2">
               <Link href={`/profile/${blog.author.username}`}>
-              <Image
-                src={
-                  blog.author.profileImage
-                    ? getImageUrl(blog.author.profileImage)
-                    : process.env.NEXT_PUBLIC_DEFAULT_POST_IMAGE!
-                }
-                alt={blog.author.name || process.env.NEXT_PUBLIC_DEFAULT_NAME!}
-                width={40}
-                height={40}
-                className="rounded-full"
-              />
+                <Image
+                  src={getImageUrl(blog.author.profileImage || "")}
+                  alt={blog.author.name}
+                  width={40}
+                  height={40}
+                  className="rounded-full"
+                />
               </Link>
               <span className="font-medium">{blog.author.name}</span>
             </div>

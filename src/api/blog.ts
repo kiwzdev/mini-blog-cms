@@ -15,7 +15,7 @@ export const getAllBlogs = async (params?: {
   category?: string;
   status?: string;
   // Sorting
-  sortBy?: "createdAt" | "title" | "likes";
+  sortBy?: "createdAt" | "likes";
   sortOrder?: "asc" | "desc";
 }): Promise<ApiResponse> => {
   try {
@@ -27,11 +27,9 @@ export const getAllBlogs = async (params?: {
 };
 
 // For Blog detail page - Full Info
-export const getBlogById = async (params?: {
-  blogId: string;
-}): Promise<ApiResponse> => {
+export const getBlogById = async (blogId: string): Promise<ApiResponse> => {
   try {
-    const { data } = await axios.get(`/api/blogs/${params?.blogId}`);
+    const { data } = await axios.get(`/api/blogs/${blogId}`);
     return data;
   } catch (error) {
     return handleApiError(error);

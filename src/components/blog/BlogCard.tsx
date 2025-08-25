@@ -21,11 +21,7 @@ function BlogCard({ blog }: { blog: IBlogCard }) {
       {/* Cover Image */}
       <div className="relative h-48 overflow-hidden">
         <Image
-          src={
-            blog.coverImage
-              ? getImageUrl(blog.coverImage)
-              : process.env.NEXT_PUBLIC_DEFAULT_POST_IMAGE!
-          }
+          src={getImageUrl(blog.coverImage || "")}
           alt={blog.title}
           fill
           className="object-cover group-hover:scale-110 transition-transform duration-300"
@@ -38,19 +34,17 @@ function BlogCard({ blog }: { blog: IBlogCard }) {
         <div className="flex items-center gap-3 mb-4">
           <Link href={`/profile/${blog.author.username}`}>
             <Image
-              src={
-                blog.author.profileImage
-                  ? getImageUrl(blog.author.profileImage)
-                  : process.env.NEXT_PUBLIC_DEFAULT_POST_IMAGE!
-              }
-              alt={blog.author.name ?? process.env.NEXT_PUBLIC_DEFAULT_NAME!}
+              src={getImageUrl(blog.coverImage || "")}
+              alt={blog.author.name}
               width={32}
               height={32}
               className="rounded-full"
             />
           </Link>
           <div className="flex-1 min-w-0">
+            <Link href={`/profile/${blog.author.username}`}>
             <p className="text-sm font-medium truncate">{blog.author.name}</p>
+            </Link>
             <div className="flex items-center gap-1 text-xs text-slate-500">
               <Clock className="w-3 h-3" />
               {formatDate(blog.createdAt)}

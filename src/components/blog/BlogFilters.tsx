@@ -25,6 +25,7 @@ interface FiltersProps {
   onFilterChange: <K extends keyof Filters>(key: K, value: Filters[K]) => void;
   onResetFilters: () => void;
   onSearch: () => void;
+  isOwner?: boolean; // เพิ่ม prop สำหรับเช็คเจ้าของ
 }
 
 export default function BlogFilters({
@@ -32,6 +33,7 @@ export default function BlogFilters({
   onFilterChange,
   onResetFilters,
   onSearch,
+  isOwner = false, // default false
 }: FiltersProps) {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
@@ -39,7 +41,7 @@ export default function BlogFilters({
   const getActiveFiltersCount = () => {
     let count = 0;
     if (filters.category) count++;
-    if (filters.status) count++;
+    if (filters.status && isOwner) count++; // นับ status เฉพาะถ้าเป็นเจ้าของ
     if (filters.dateRange.start || filters.dateRange.end) count++;
     return count;
   };
@@ -107,7 +109,13 @@ export default function BlogFilters({
 
       {/* Desktop Filters - Always Visible */}
       <div className="hidden md:block">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div
+          className={`grid gap-6 ${
+            isOwner
+              ? "grid-cols-1 md:grid-cols-4"
+              : "grid-cols-1 md:grid-cols-3"
+          }`}
+        >
           {/* Category */}
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">
@@ -116,45 +124,45 @@ export default function BlogFilters({
             <CategorySelect
               category={filters.category}
               onFilterChange={onFilterChange}
-              onSearch={onSearch}
             />
           </div>
 
-          {/* Status */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              สถานะ
-            </label>
-            <Select
-              value={filters.status}
-              onValueChange={(value) => {
-                onFilterChange("status", value);
-                onSearch();
-              }}
-            >
-              <SelectTrigger
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg 
-                                  focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400
-                                  text-gray-800 bg-white transition-all"
+          {/* Status - แสดงเฉพาะเมื่อเป็นเจ้าของ */}
+          {isOwner && (
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                สถานะ
+              </label>
+              <Select
+                value={filters.status}
+                onValueChange={(value) => {
+                  onFilterChange("status", value);
+                }}
               >
-                <SelectValue placeholder="เลือกสถานะ" />
-              </SelectTrigger>
-              <SelectContent>
-                {BLOG_STATUSES.map((status) => (
-                  <SelectItem
-                    key={status.id}
-                    value={status.value}
-                    className="capitalize"
-                  >
-                    {status.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+                <SelectTrigger
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg 
+                                    focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400
+                                    text-gray-800 bg-white transition-all"
+                >
+                  <SelectValue placeholder="เลือกสถานะ" />
+                </SelectTrigger>
+                <SelectContent>
+                  {BLOG_STATUSES.map((status) => (
+                    <SelectItem
+                      key={status.id}
+                      value={status.value}
+                      className="capitalize"
+                    >
+                      {status.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Date Range */}
-          <div className="space-y-2 col-span-2">
+          <div className={`space-y-2 ${isOwner ? "col-span-2" : "col-span-2"}`}>
             <label className="block text-sm font-medium text-gray-700">
               ช่วงวันที่
             </label>
@@ -186,7 +194,6 @@ export default function BlogFilters({
                         ...filters.dateRange,
                         start: date.toISOString(),
                       });
-                      onSearch();
                     }}
                     disabled={(date) =>
                       filters.dateRange.end
@@ -225,7 +232,6 @@ export default function BlogFilters({
                         ...filters.dateRange,
                         end: date.toISOString(),
                       });
-                      onSearch();
                     }}
                     disabled={(date) =>
                       filters.dateRange.start
@@ -266,7 +272,6 @@ export default function BlogFilters({
               value={filters.category}
               onValueChange={(value) => {
                 onFilterChange("category", value);
-                onSearch();
               }}
             >
               <SelectTrigger
@@ -290,38 +295,39 @@ export default function BlogFilters({
             </Select>
           </div>
 
-          {/* Status */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              สถานะ
-            </label>
-            <Select
-              value={filters.status}
-              onValueChange={(value) => {
-                onFilterChange("status", value);
-                onSearch();
-              }}
-            >
-              <SelectTrigger
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg 
-                                  focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400
-                                  text-gray-800 bg-white transition-all"
+          {/* Status - แสดงเฉพาะเมื่อเป็นเจ้าของ */}
+          {isOwner && (
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                สถานะ
+              </label>
+              <Select
+                value={filters.status}
+                onValueChange={(value) => {
+                  onFilterChange("status", value);
+                }}
               >
-                <SelectValue placeholder="เลือกสถานะ" />
-              </SelectTrigger>
-              <SelectContent>
-                {BLOG_STATUSES.map((status) => (
-                  <SelectItem
-                    key={status.id}
-                    value={status.value}
-                    className="capitalize"
-                  >
-                    {status.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+                <SelectTrigger
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg 
+                                    focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400
+                                    text-gray-800 bg-white transition-all"
+                >
+                  <SelectValue placeholder="เลือกสถานะ" />
+                </SelectTrigger>
+                <SelectContent>
+                  {BLOG_STATUSES.map((status) => (
+                    <SelectItem
+                      key={status.id}
+                      value={status.value}
+                      className="capitalize"
+                    >
+                      {status.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Date Range - Mobile */}
           <div className="space-y-2">
@@ -357,7 +363,6 @@ export default function BlogFilters({
                         ...filters.dateRange,
                         start: date.toISOString(),
                       });
-                      onSearch();
                     }}
                     disabled={(date) =>
                       filters.dateRange.end
@@ -397,7 +402,6 @@ export default function BlogFilters({
                         ...filters.dateRange,
                         end: date.toISOString(),
                       });
-                      onSearch();
                     }}
                     disabled={(date) =>
                       filters.dateRange.start

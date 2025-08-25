@@ -1,4 +1,5 @@
 import { getAllBlogs } from "@/api/blog";
+import { Meta } from "@/types/api";
 import { IBlogCard } from "@/types/blog";
 import { useState, useCallback, useEffect } from "react";
 
@@ -6,13 +7,6 @@ export interface PaginationOptions {
   limit?: number;
   initialPage?: number;
   userId?: string;
-}
-
-export interface PaginationMeta {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
 }
 
 export const useBlogPagination = (options: PaginationOptions = {}) => {
@@ -41,11 +35,11 @@ export const useBlogPagination = (options: PaginationOptions = {}) => {
 
         if (response.success) {
           const blogData = response.data as IBlogCard[];
-          const meta = response.meta as PaginationMeta;
+          const meta = response.meta as Meta;
 
           setBlogs(blogData);
           setCurrentPage(meta.page);
-          setTotalPages(meta.totalPages);
+          setTotalPages(meta.pages);
           setTotalBlogs(meta.total);
 
           return true;

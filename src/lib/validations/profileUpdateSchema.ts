@@ -15,12 +15,24 @@ export const profileUpdateSchema = z.object({
     .or(z.literal("")),
 
   profileImage: z
+    .union([z.string().url(), z.instanceof(File), z.literal(""), z.null()])
+    .optional(),
+
+  coverImage: z
     .string()
-    .url("Invalid image URL")
+    .trim()
+    .url("Invalid cover image URL")
     .optional()
     .or(z.literal("")),
-
+    
   location: z.string().trim().max(100).optional().or(z.literal("")),
+
+  website: z
+    .string()
+    .trim()
+    .url("Invalid website URL")
+    .optional()
+    .or(z.literal("")),
 
   jobTitle: z.string().trim().max(100).optional().or(z.literal("")),
 
@@ -28,16 +40,62 @@ export const profileUpdateSchema = z.object({
 
   education: z.string().trim().max(100).optional().or(z.literal("")),
 
-  socialLinks: z.object({
-    website: z.string().trim().url("Invalid URL").optional().or(z.literal("")),
-    github: z.string().trim().url("Invalid URL").optional().or(z.literal("")),
-    twitter: z.string().trim().url("Invalid URL").optional().or(z.literal("")),
-    linkedin: z.string().trim().url("Invalid URL").optional().or(z.literal("")),
-    instagram: z.string().trim().url("Invalid URL").optional().or(z.literal("")),
-    facebook: z.string().trim().url("Invalid URL").optional().or(z.literal("")),
-    youtube: z.string().trim().url("Invalid URL").optional().or(z.literal("")),
-    tiktok: z.string().trim().url("Invalid URL").optional().or(z.literal("")),
-  }).optional(),
+  email: z
+    .string()
+    .trim()
+    .email("Invalid email address")
+    .optional()
+    .or(z.literal("")),
+
+  phone: z
+    .string()
+    .trim()
+    .max(20, "Phone number must be at most 20 characters")
+    .optional()
+    .or(z.literal("")),
+
+  socialLinks: z
+    .object({
+      website: z
+        .string()
+        .trim()
+        .url("Invalid URL")
+        .optional()
+        .or(z.literal("")),
+      github: z.string().trim().url("Invalid URL").optional().or(z.literal("")),
+      twitter: z
+        .string()
+        .trim()
+        .url("Invalid URL")
+        .optional()
+        .or(z.literal("")),
+      linkedin: z
+        .string()
+        .trim()
+        .url("Invalid URL")
+        .optional()
+        .or(z.literal("")),
+      instagram: z
+        .string()
+        .trim()
+        .url("Invalid URL")
+        .optional()
+        .or(z.literal("")),
+      facebook: z
+        .string()
+        .trim()
+        .url("Invalid URL")
+        .optional()
+        .or(z.literal("")),
+      youtube: z
+        .string()
+        .trim()
+        .url("Invalid URL")
+        .optional()
+        .or(z.literal("")),
+      tiktok: z.string().trim().url("Invalid URL").optional().or(z.literal("")),
+    })
+    .optional(),
 });
 
 export type ProfileFormData = z.infer<typeof profileUpdateSchema>;

@@ -60,9 +60,7 @@ export function useComment(
   const { data: session } = useSession();
   const router = useRouter();
 
-  const [comments, setComments] = useState<IComment[]>(
-    options.initialComments || []
-  );
+  const [comments, setComments] = useState<IComment[]>([]);
   const [newComment, setNewComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -78,7 +76,7 @@ export function useComment(
       const response = await api.get(targetId);
 
       if (response.success) {
-        setComments(response.data);
+        setComments(response.data.comments);
         return true;
       } else {
         throw new Error(response.error?.message || "Failed to fetch comments");
@@ -106,6 +104,7 @@ export function useComment(
       }
 
       const response = await api.create(targetId, newComment);
+      console.log(response);
 
       if (response.success) {
         // เพิ่มคอมเม้นต์ใหม่ที่ด้านบน
@@ -160,15 +159,14 @@ export function useComment(
     async (commentId: string, content: string) => {
       try {
         const response = await api.edit(targetId, commentId, content);
-
         if (response.success) {
           setComments((prev) =>
             prev.map((comment) =>
               comment.id === commentId
                 ? {
                     ...comment,
-                    content: response.data.content,
-                    updatedAt: response.data.updatedAt,
+                    content: response.data.comments.content,
+                    updatedAt: response.data.comments.updatedAt,
                   }
                 : comment
             )

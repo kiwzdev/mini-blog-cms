@@ -5,8 +5,59 @@ import prisma from "@/lib/db";
 import { UpdateBlogInput } from "@/lib/validations/blogSchema";
 import { createErrorResponse, createSuccessResponse } from "@/lib/api-response";
 import { Prisma } from "@prisma/client";
+import { IComment } from "@/types/blog";
 
 type ParamsType = Promise<{ blogId: string }>;
+
+// ✅ 1. Cache for blog existence and basic info
+const blogCache = new Map<string, { exists: boolean; authorId: string; published: boolean }>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+async function getBlogBasicInfo(blogId: string) {
+  const cached = blogCache.get(blogId);
+  if (cached) return cached;
+
+  const blog = await prisma.blog.findUnique({
+    where: { id: blogId },
+    select: { 
+      id: true, 
+      authorId: true, 
+      published: true 
+    },
+  });
+
+  const info = blog 
+    ? { exists: true, authorId: blog.authorId, published: blog.published }
+    : { exists: false, authorId: '', published: false };
+  
+  blogCache.set(blogId, info);
+  
+  setTimeout(() => {
+    blogCache.delete(blogId);
+  }, CACHE_TTL);
+
+  return info;
+}
+
+// ✅ 2. Helper function for reading time
+function calculateReadingTime(content: string): number {
+  const wordsPerMinute = 200;
+  const wordCount = content.trim().split(/\s+/).length;
+  return Math.ceil(wordCount / wordsPerMinute);
+}
+
+// ✅ 3. Optimized view increment (background task)
+async function incrementViewCount(blogId: string, authorId: string, currentUserId?: string) {
+  if (authorId !== currentUserId) {
+    // Fire-and-forget view increment
+    prisma.blog.update({
+      where: { id: blogId },
+      data: { views: { increment: 1 } },
+    }).catch(error => {
+      console.error("Error incrementing view count:", error);
+    });
+  }
+}
 
 // GET /api/blogs/[blogId] - Get single blog by blogId
 export async function GET(
@@ -17,31 +68,54 @@ export async function GET(
     const { blogId } = await params;
     const { searchParams } = new URL(request.url);
 
-    // Pagination params for related blogs
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "6");
-    const skip = (page - 1) * limit;
-
-    // Filters params
-    const search = searchParams.get("search");
-    const category = searchParams.get("category");
-    const status = searchParams.get("status");
-
-    // Sorting params
-    const sortBy = searchParams.get("sortBy") || "createdAt";
-    const sortOrder = (searchParams.get("sortOrder") || "desc") as Prisma.SortOrder;
-
-    // Include related blogs flag
-    const includeRelated = searchParams.get("includeRelated") === "true";
-
-    // Get current session
+    // ✅ 4. Early validation and session
     const session = await getServerSession(authOptions);
     const currentUserId = session?.user?.id;
 
-    // Fetch the main blog
-    const blog = await prisma.blog.findUnique({
+    // Check blog existence first
+    const basicInfo = await getBlogBasicInfo(blogId);
+    if (!basicInfo.exists) {
+      return createErrorResponse({
+        code: "BLOG_NOT_FOUND",
+        message: "Blog not found",
+        status: 404,
+      });
+    }
+
+    // ✅ 5. Early authorization check
+    if (!basicInfo.published && basicInfo.authorId !== currentUserId) {
+      return createErrorResponse({
+        code: "UNAUTHORIZED",
+        message: "You are not authorized to view this blog",
+        status: 401,
+      });
+    }
+
+    // ✅ 6. Background view increment
+    incrementViewCount(blogId, basicInfo.authorId, currentUserId);
+
+    // Parse query params
+    const includeRelated = searchParams.get("includeRelated") === "true";
+    const includeComments = searchParams.get("includeComments") !== "false"; // default true
+    const commentsLimit = Math.min(parseInt(searchParams.get("commentsLimit") || "5"), 20);
+
+    // ✅ 7. Conditional queries based on what's needed
+    const blogQuery = prisma.blog.findUnique({
       where: { id: blogId },
-      include: {
+      select: {
+        id: true,
+        title: true,
+        content: true,
+        contentType: true,
+        excerpt: true,
+        slug: true,
+        coverImage: true,
+        category: true,
+        published: true,
+        views: true,
+        createdAt: true,
+        updatedAt: true,
+        authorId: true,
         author: {
           select: {
             id: true,
@@ -50,30 +124,43 @@ export async function GET(
             username: true,
           },
         },
-        comments: {
-          include: {
-            author: {
-              select: {
-                id: true,
-                name: true,
-                profileImage: true,
-                username: true,
+        // ✅ Conditional includes
+        ...(includeComments && {
+          comments: {
+            select: {
+              id: true,
+              content: true,
+              createdAt: true,
+              author: {
+                select: {
+                  id: true,
+                  name: true,
+                  profileImage: true,
+                  username: true,
+                },
+              },
+              // ✅ Only get user's like status for comments
+              ...(currentUserId && {
+                likes: {
+                  where: { userId: currentUserId },
+                  select: { id: true },
+                },
+              }),
+              _count: {
+                select: { likes: true },
               },
             },
+            orderBy: { createdAt: "desc" },
+            take: commentsLimit,
           },
-          orderBy: { createdAt: "desc" },
-        },
-        likes: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                username: true,
-              },
-            },
+        }),
+        // ✅ Get like status efficiently
+        ...(currentUserId && {
+          likes: {
+            where: { userId: currentUserId },
+            select: { id: true },
           },
-        },
+        }),
         _count: {
           select: {
             comments: true,
@@ -83,48 +170,30 @@ export async function GET(
       },
     });
 
-    if (!blog) {
-      return createErrorResponse({
-        code: "BLOG_NOT_FOUND",
-        message: "Blog not found",
-        status: 404,
-      });
-    }
-
-    // Check if blog is published or user is the author
-    if (!blog.published && blog.authorId !== currentUserId) {
-      return createErrorResponse({
-        code: "UNAUTHORIZED",
-        message: "You are not authorized to view this blog",
-        status: 401,
-      });
-    }
-
-    // Increment blog views (only if not the author)
-    if (blog.authorId !== currentUserId) {
-      await prisma.blog.update({
-        where: { id: blogId },
-        data: { views: { increment: 1 } },
-      });
-    }
-
-    // Check if user liked this blog
-    const isLiked = currentUserId
-      ? blog.likes.some((like) => like.user.id === currentUserId)
-      : false;
-
-    let relatedBlogs = null;
-    let relatedBlogsTotal = 0;
-
-    // Fetch related blogs if requested
+    // ✅ 8. Optimized related blogs query
+    let relatedBlogsQuery = null;
     if (includeRelated) {
-      // Build where clause for related blogs
+      const page = parseInt(searchParams.get("page") || "1");
+      const limit = Math.min(parseInt(searchParams.get("limit") || "6"), 20);
+      const skip = (page - 1) * limit;
+      
+      const search = searchParams.get("search");
+      const category = searchParams.get("category");
+      const sortBy = searchParams.get("sortBy") || "createdAt";
+      const sortOrder = (searchParams.get("sortOrder") || "desc") as Prisma.SortOrder;
+
+      // ✅ Get blog category for related blogs
+      const blogCategory = await prisma.blog.findUnique({
+        where: { id: blogId },
+        select: { category: true },
+      });
+
       const relatedWhereClause: Prisma.BlogWhereInput = {
         published: true,
-        id: { not: blogId }, // Exclude current blog
+        id: { not: blogId },
+        category: category && category !== "all" ? category : blogCategory?.category,
       };
 
-      // Apply filters
       if (search) {
         relatedWhereClause.OR = [
           { title: { contains: search, mode: "insensitive" } },
@@ -132,29 +201,6 @@ export async function GET(
         ];
       }
 
-      if (category && category !== "all") {
-        relatedWhereClause.category = category;
-      } else {
-        // Show blogs from same category if no specific filter
-        relatedWhereClause.category = blog.category;
-      }
-
-      if (status && status !== "all") {
-        if (status === "published") {
-          relatedWhereClause.published = true;
-        } else if (status === "draft") {
-          relatedWhereClause.published = false;
-          // Only show drafts if user is authenticated and it's their own
-          if (currentUserId) {
-            relatedWhereClause.authorId = currentUserId;
-          } else {
-            // If not authenticated, don't show any drafts
-            relatedWhereClause.published = true;
-          }
-        }
-      }
-
-      // Build orderBy clause
       let orderBy: Prisma.BlogOrderByWithRelationInput;
       switch (sortBy) {
         case "likes":
@@ -163,23 +209,22 @@ export async function GET(
         case "views":
           orderBy = { views: sortOrder };
           break;
-        case "title":
-          orderBy = { title: sortOrder };
-          break;
-        case "updatedAt":
-          orderBy = { updatedAt: sortOrder };
-          break;
-        case "createdAt":
         default:
           orderBy = { createdAt: sortOrder };
           break;
       }
 
-      // Fetch related blogs and count
-      const [blogsList, totalCount] = await Promise.all([
+      relatedBlogsQuery = Promise.all([
         prisma.blog.findMany({
           where: relatedWhereClause,
-          include: {
+          select: {
+            id: true,
+            title: true,
+            excerpt: true,
+            coverImage: true,
+            category: true,
+            views: true,
+            createdAt: true,
             author: {
               select: {
                 id: true,
@@ -199,39 +244,53 @@ export async function GET(
           skip,
           take: limit,
         }),
-        prisma.blog.count({
-          where: relatedWhereClause,
-        }),
+        prisma.blog.count({ where: relatedWhereClause }),
       ]);
-
-      relatedBlogs = blogsList;
-      relatedBlogsTotal = totalCount;
     }
 
-    // Prepare response data
+    // ✅ 9. Execute queries in parallel
+    const [blog, relatedBlogsResult] = await Promise.all([
+      blogQuery,
+      relatedBlogsQuery,
+    ]);
+
+    if (!blog) {
+      return createErrorResponse({
+        code: "BLOG_NOT_FOUND",
+        message: "Blog not found",
+        status: 404,
+      });
+    }
+
+    // ✅ 10. Efficient response construction
+    const isLiked = currentUserId && blog.likes ? blog.likes.length > 0 : false;
+    const isAuthor = currentUserId === blog.authorId;
+    const readingTime = calculateReadingTime(blog.content);
+
+    // ✅ 11. Transform comments efficiently
+    const transformedComments = includeComments && blog.comments 
+      ? blog.comments.map(comment => ({
+          ...comment,
+          isLiked: currentUserId && (comment as any).likes ? (comment as any).likes.length > 0 : false,
+        }))
+      : [];
+
     const responseData = {
       blog: {
         ...blog,
         isLiked,
-        isAuthor: currentUserId === blog.authorId,
+        isAuthor,
+        readingTime,
+        ...(includeComments && { comments: transformedComments }),
       },
-      ...(includeRelated && {
+      ...(includeRelated && relatedBlogsResult && {
         relatedBlogs: {
-          data: relatedBlogs,
+          data: relatedBlogsResult[0],
           pagination: {
-            page,
-            limit,
-            total: relatedBlogsTotal,
-            totalPages: Math.ceil(relatedBlogsTotal / limit),
-            hasNextPage: page < Math.ceil(relatedBlogsTotal / limit),
-            hasPrevPage: page > 1,
-          },
-          appliedFilters: {
-            search,
-            category: category || blog.category,
-            status,
-            sortBy,
-            sortOrder,
+            page: parseInt(searchParams.get("page") || "1"),
+            limit: Math.min(parseInt(searchParams.get("limit") || "6"), 20),
+            total: relatedBlogsResult[1],
+            hasMore: relatedBlogsResult[0].length === Math.min(parseInt(searchParams.get("limit") || "6"), 20),
           },
         },
       }),
@@ -241,10 +300,10 @@ export async function GET(
       data: responseData,
       message: "Blog fetched successfully",
     });
+
   } catch (error) {
     console.error("Error fetching blog:", error);
 
-    // Handle specific Prisma errors
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === "P2025") {
         return createErrorResponse({
@@ -263,19 +322,13 @@ export async function GET(
   }
 }
 
-// Helper function to calculate reading time
-function calculateReadingTime(content: string): number {
-  const wordsPerMinute = 200;
-  const wordCount = content.trim().split(/\s+/).length;
-  return Math.ceil(wordCount / wordsPerMinute);
-}
-
-// PUT /api/blogs/[id] - Update blog
+// ✅ 12. Optimized PUT endpoint
 export async function PUT(
   request: NextRequest,
   { params }: { params: ParamsType }
 ) {
   try {
+    // Early auth check
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return createErrorResponse({
@@ -286,15 +339,10 @@ export async function PUT(
     }
 
     const { blogId } = await params;
-    const body: UpdateBlogInput = await request.json();
-
-    // Check if user owns the blog
-    const existingBlog = await prisma.blog.findUnique({
-      where: { id: blogId },
-      select: { authorId: true },
-    });
-
-    if (!existingBlog) {
+    
+    // ✅ Use cached basic info
+    const basicInfo = await getBlogBasicInfo(blogId);
+    if (!basicInfo.exists) {
       return createErrorResponse({
         code: "BLOG_NOT_FOUND",
         message: "Blog not found",
@@ -302,7 +350,7 @@ export async function PUT(
       });
     }
 
-    if (existingBlog.authorId !== session?.user.id) {
+    if (basicInfo.authorId !== session.user.id) {
       return createErrorResponse({
         code: "FORBIDDEN",
         message: "You don't have permission to update this blog",
@@ -310,6 +358,7 @@ export async function PUT(
       });
     }
 
+    const body: UpdateBlogInput = await request.json();
     const {
       title,
       content,
@@ -321,23 +370,36 @@ export async function PUT(
       category,
     } = body;
 
-    const updateData = {
-      content,
-      contentType,
-      excerpt,
-      coverImage,
-      published,
-      category,
-      title,
-      slug,
-    };
+    // ✅ Clear cache on update
+    blogCache.delete(blogId);
 
     const blog = await prisma.blog.update({
       where: { id: blogId },
-      data: updateData,
-      include: {
+      data: {
+        title,
+        content,
+        contentType,
+        excerpt,
+        slug,
+        coverImage,
+        published,
+        category,
+        updatedAt: new Date(),
+      },
+      select: {
+        id: true,
+        title: true,
+        content: true,
+        contentType: true,
+        excerpt: true,
+        slug: true,
+        coverImage: true,
+        published: true,
+        category: true,
+        views: true,
+        createdAt: true,
+        updatedAt: true,
         author: {
-          // Include the author
           select: {
             id: true,
             name: true,
@@ -346,7 +408,6 @@ export async function PUT(
           },
         },
         _count: {
-          // Include comment and like counts
           select: {
             comments: true,
             likes: true,
@@ -359,17 +420,18 @@ export async function PUT(
       data: blog,
       message: "Blog updated successfully",
     });
+
   } catch (error) {
     console.error("Error updating blog:", error);
     return createErrorResponse({
       code: "UPDATE_BLOG_ERROR",
-      message: "Failed to update blogs",
+      message: "Failed to update blog",
       status: 500,
     });
   }
 }
 
-// DELETE /api/blogs/[id] - Delete blog
+// ✅ 13. Optimized DELETE endpoint
 export async function DELETE(
   request: NextRequest,
   { params }: { params: ParamsType }
@@ -386,13 +448,9 @@ export async function DELETE(
 
     const { blogId } = await params;
 
-    // Check if user owns the blog
-    const existingBlog = await prisma.blog.findUnique({
-      where: { id: blogId },
-      select: { authorId: true },
-    });
-
-    if (!existingBlog) {
+    // ✅ Use cached basic info
+    const basicInfo = await getBlogBasicInfo(blogId);
+    if (!basicInfo.exists) {
       return createErrorResponse({
         code: "BLOG_NOT_FOUND",
         message: "Blog not found",
@@ -400,7 +458,7 @@ export async function DELETE(
       });
     }
 
-    if (existingBlog.authorId !== session?.user.id) {
+    if (basicInfo.authorId !== session.user.id) {
       return createErrorResponse({
         code: "FORBIDDEN",
         message: "You don't have permission to delete this blog",
@@ -408,16 +466,24 @@ export async function DELETE(
       });
     }
 
+    // ✅ Clear cache on delete
+    blogCache.delete(blogId);
+
     await prisma.blog.delete({
       where: { id: blogId },
     });
 
-    return NextResponse.json({ message: "Blog deleted successfully" });
+    return createSuccessResponse({
+      data: null,
+      message: "Blog deleted successfully",
+    });
+
   } catch (error) {
     console.error("Error deleting blog:", error);
     return createErrorResponse({
       code: "DELETE_BLOG_ERROR",
       message: "Failed to delete blog",
+      status: 500,
     });
   }
 }

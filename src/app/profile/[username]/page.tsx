@@ -39,10 +39,11 @@ import { ProfileSkeleton } from "@/components/profile/ProfileSkeleton";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/state/ErrorState";
 import { EditProfileModal } from "@/components/profile/edit/EditProfileModal";
-import { getCloudinaryUrl } from "@/lib/image/cloudinary";
 import { SmartNavigation } from "@/components/Navbar/SmartNavbar";
 import { SettingProfileModal } from "@/components/profile/setting/ProfileSettingModal";
 import BlogFilters from "@/components/blog/BlogFilters";
+import { getImageUrl } from "@/lib/image";
+import { BLOGS_PAGE_LIMIT } from "@/lib/config";
 
 type ProfilePageProps = {
   username: string;
@@ -210,8 +211,8 @@ export default function ProfilePage() {
                 </div>
               </div>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <BlogCardSkeleton key={i} />
+                {Array.from({ length: BLOGS_PAGE_LIMIT }).map((_, index) => (
+                  <BlogCardSkeleton key={index} />
                 ))}
               </div>
             </div>
@@ -254,11 +255,7 @@ export default function ProfilePage() {
                       <div className="relative w-32 h-32 md:w-40 md:h-40">
                         <Image
                           priority={false}
-                          src={
-                            profile?.profileImage
-                              ? getCloudinaryUrl(profile?.profileImage)
-                              : process.env.NEXT_PUBLIC_DEFAULT_PROFILE_IMAGE!
-                          }
+                          src={getImageUrl(profile.profileImage || "")}
                           alt={profile.name}
                           fill
                           sizes="100%"
@@ -287,19 +284,21 @@ export default function ProfilePage() {
                           onClick={handleFollowToggle}
                           disabled={isToggling}
                           className={`min-w-[100px] transition-all duration-200 ${
-                            isFollowing
+                            isFollowing || profile.isFollowing
                               ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300"
                               : "bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl hover:scale-105"
                           }`}
                         >
                           {isToggling ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : isFollowing ? (
+                          ) : isFollowing || profile.isFollowing ? (
                             ""
                           ) : (
                             <UserPlus className="w-4 h-4 mr-2" />
                           )}
-                          {isFollowing ? "Following" : "Follow"}
+                          {isFollowing || profile.isFollowing
+                            ? "Following"
+                            : "Follow"}
                         </Button>
                       </div>
                     )}
@@ -400,18 +399,20 @@ export default function ProfilePage() {
                             เข้าร่วมเมื่อ{" "}
                             {formatDate(new Date(profile.createdAt))}
                           </div>
-                          {profile.phone ? (
-                            <div className="flex items-center gap-1">
-                              <Phone className="w-4 h-4" />
-                              {profile.phone}
-                            </div>
-                          ) : null}
-                          {profile.email ? (
-                            <div className="flex items-center gap-1">
-                              <Mail className="w-4 h-4" />
-                              {profile.email}
-                            </div>
-                          ) : null}
+                          {profile.settings?.showPhone ||
+                            (isOwnProfile(session?.user?.username) && (
+                              <div className="flex items-center gap-1">
+                                <Phone className="w-4 h-4" />
+                                {profile.phone}
+                              </div>
+                            ))}
+                          {profile.settings?.showPhone ||
+                            (isOwnProfile(session?.user?.username) && (
+                              <div className="flex items-center gap-1">
+                                <Mail className="w-4 h-4" />
+                                {profile.email}
+                              </div>
+                            ))}
                         </div>
 
                         {profile.lastActiveAt && (
@@ -642,21 +643,22 @@ export default function ProfilePage() {
                 </div>
               </div>
 
+              {/* Filter/Sort options */}
+              <BlogFilters
+                onSearch={handleSearch}
+                filters={filters}
+                onFilterChange={handleFilterChange}
+                onResetFilters={resetFilters}
+                isOwner={isOwnProfile(session?.user?.username)}
+              />
               {isLoadingBlogs ? (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {[...[1, 2, 3, 4, 5, 6]].map((i) => (
-                    <BlogCardSkeleton key={i} />
+                  {Array.from({ length: BLOGS_PAGE_LIMIT }).map((_, index) => (
+                    <BlogCardSkeleton key={index} />
                   ))}
                 </div>
               ) : blogs.length > 0 ? (
                 <>
-                  {/* Filter/Sort options */}
-                  <BlogFilters
-                    onSearch={handleSearch}
-                    filters={filters}
-                    onFilterChange={handleFilterChange}
-                    onResetFilters={resetFilters}
-                  />
                   {/* Blogs Grid */}
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <Suspense fallback={<BlogCardSkeleton />}>
@@ -687,28 +689,30 @@ export default function ProfilePage() {
                 </>
               ) : (
                 // Empty State
-                <Card className="glass-card border-0">
-                  <CardContent className="p-12 text-center">
-                    <div className="w-20 h-20 mx-auto mb-6 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center">
-                      <FileText className="w-10 h-10 text-slate-400" />
-                    </div>
-                    <h3 className="text-xl font-semibold mb-2 text-slate-900 dark:text-white">
-                      ยังไม่มีบล็อก
-                    </h3>
-                    <p className="text-slate-500 mb-6">
-                      {profile.name} ยังไม่ได้เขียนบล็อกใดๆ
-                    </p>
-                    {isOwnProfile(session?.user?.username) && (
-                      <Button
-                        className="bg-blue-600 hover:bg-blue-700 text-white"
-                        onClick={handleCreateBlog}
-                      >
-                        <Plus className="w-4 h-4 mr-2" />
-                        เขียนบล็อกแรก
-                      </Button>
-                    )}
-                  </CardContent>
-                </Card>
+                <>
+                  <Card className="glass-card border-0">
+                    <CardContent className="p-12 text-center">
+                      <div className="w-20 h-20 mx-auto mb-6 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center">
+                        <FileText className="w-10 h-10 text-slate-400" />
+                      </div>
+                      <h3 className="text-xl font-semibold mb-2 text-slate-900 dark:text-white">
+                        ยังไม่มีบล็อก
+                      </h3>
+                      <p className="text-slate-500 mb-6">
+                        {profile.name} ยังไม่ได้เขียนบล็อกใดๆ
+                      </p>
+                      {isOwnProfile(session?.user?.username) && (
+                        <Button
+                          className="bg-blue-600 hover:bg-blue-700 text-white"
+                          onClick={handleCreateBlog}
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          เขียนบล็อกแรก
+                        </Button>
+                      )}
+                    </CardContent>
+                  </Card>
+                </>
               )}
             </div>
           </div>

@@ -92,9 +92,12 @@ export const useUserBlogs = (userId: string) => {
   useEffect(() => {
     if (userId) {
       // สร้าง debounce สำหรับ search
-      const timeoutId = setTimeout(() => {
-        fetchBlogs(1, BLOGS_PAGE_LIMIT, false, filters);
-      }, filters.search ? 500 : 0); // Debounce 500ms สำหรับ search, ทันทีสำหรับ filters อื่น
+      const timeoutId = setTimeout(
+        () => {
+          fetchBlogs(1, BLOGS_PAGE_LIMIT, false, filters);
+        },
+        filters.search ? 500 : 0
+      ); // Debounce 500ms สำหรับ search, ทันทีสำหรับ filters อื่น
 
       return () => clearTimeout(timeoutId);
     }
@@ -108,7 +111,14 @@ export const useUserBlogs = (userId: string) => {
 
     const success = await fetchBlogs(currentPage + 1, 3, true, filters);
     return success;
-  }, [hasMore, isLoadingBlogs, isLoadingMore, currentPage, fetchBlogs, filters]);
+  }, [
+    hasMore,
+    isLoadingBlogs,
+    isLoadingMore,
+    currentPage,
+    fetchBlogs,
+    filters,
+  ]);
 
   // Filter handlers
   const handleFilterChange = <K extends keyof Filters>(

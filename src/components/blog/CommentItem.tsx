@@ -65,11 +65,7 @@ export function CommentItem({
     <div className="flex gap-4 p-4 bg-white/30 dark:bg-black/20 rounded-lg backdrop-blur-sm">
       <Link href={`/profile/${comment.author.username}`}>
         <Image
-          src={
-            comment.author.profileImage
-              ? getImageUrl(comment.author.profileImage)
-              : process.env.NEXT_PUBLIC_DEFAULT_POST_IMAGE!
-          }
+          src={getImageUrl(comment.author.profileImage || "")}
           alt={comment.author.name}
           width={40}
           height={40}

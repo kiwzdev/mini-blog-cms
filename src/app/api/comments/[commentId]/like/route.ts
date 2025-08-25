@@ -23,13 +23,72 @@ export async function POST(
     }
 
     const { commentId } = await params;
+    const userId = session.user.id;
 
-    // Check if comment exists
-    const comment = await prisma.comment.findUnique({
-      where: { id: commentId },
+    // ใช้ transaction เพื่อ consistency และ performance
+    const result = await prisma.$transaction(async (tx) => {
+      // ตรวจสอบว่า comment มีอยู่และ user like อยู่หรือไม่ในคำสั่งเดียว
+      const existingLike = await tx.commentLike.findUnique({
+        where: {
+          commentId_userId: {
+            commentId: commentId,
+            userId: userId,
+          },
+        },
+        select: {
+          id: true,
+          comment: {
+            select: {
+              id: true, // เอาแค่ id เพื่อ verify ว่า comment มีอยู่
+            },
+          },
+        },
+      });
+
+      // ถ้าไม่มี like record แต่ comment ไม่มีอยู่จริง
+      if (!existingLike) {
+        // ตรวจสอบว่า comment มีอยู่หรือไม่ก่อนสร้าง like
+        const commentExists = await tx.comment.findUnique({
+          where: { id: commentId },
+          select: { id: true }, // เอาแค่ id
+        });
+
+        if (!commentExists) {
+          throw new Error("COMMENT_NOT_FOUND");
+        }
+
+        // สร้าง like ใหม่
+        await tx.commentLike.create({
+          data: {
+            commentId: commentId,
+            userId: userId,
+          },
+        });
+
+        return { liked: true };
+      } else {
+        // ลบ like ที่มีอยู่
+        await tx.commentLike.delete({
+          where: {
+            id: existingLike.id,
+          },
+        });
+
+        return { liked: false };
+      }
     });
 
-    if (!comment) {
+    return createSuccessResponse({
+      data: result,
+      message: result.liked
+        ? "Comment liked successfully"
+        : "Comment unliked successfully",
+    });
+  } catch (error) {
+    console.error("Error toggling comment like:", error);
+
+    // Handle specific error cases
+    if (error instanceof Error && error.message === "COMMENT_NOT_FOUND") {
       return createErrorResponse({
         code: "COMMENT_NOT_FOUND",
         message: "Comment not found",
@@ -37,44 +96,6 @@ export async function POST(
       });
     }
 
-    // Check if user already liked the comment
-    const existingLike = await prisma.commentLike.findUnique({
-      where: {
-        commentId_userId: {
-          commentId: commentId,
-          userId: session.user.id,
-        },
-      },
-    });
-
-    if (existingLike) {
-      // Unlike the comment
-      await prisma.commentLike.delete({
-        where: {
-          id: existingLike.id,
-        },
-      });
-
-      return createSuccessResponse({
-        data: { liked: false },
-        message: "Comment unliked successfully",
-      });
-    } else {
-      // Like the comment
-      await prisma.commentLike.create({
-        data: {
-          commentId: commentId,
-          userId: session.user.id,
-        },
-      });
-
-      return createSuccessResponse({
-        data: { liked: true },
-        message: "Comment liked successfully",
-      });
-    }
-  } catch (error) {
-    console.error("Error toggling comment like:", error);
     return createErrorResponse({
       code: "TOGGLE_COMMENT_LIKE_ERROR",
       message: "Error toggling comment like",

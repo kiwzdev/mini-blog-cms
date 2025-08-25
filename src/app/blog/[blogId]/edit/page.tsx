@@ -77,17 +77,17 @@ export default function EditBlogPage() {
     const fetchBlog = async () => {
       try {
         setLoading(true);
-        const response = await getBlogById({blogId});
-        console.log(response);
+        const response = await getBlogById(blogId);
+        console.log(response)
 
         if (response.success) {
-          setTitle(response.data.title || "");
-          setContent(response.data.content || "");
-          setContentType(response.data.contentType || "markdown");
-          setCategory(response.data.category || "");
-          setCoverImage(response.data.coverImage || "");
-          setIsPublished(response.data.published || false);
-          setBlog(response.data);
+          setTitle(response.data.blog.title || "");
+          setContent(response.data.blog.content || "");
+          setContentType(response.data.blog.contentType || "markdown");
+          setCategory(response.data.blog.category || "");
+          setCoverImage(response.data.blog.coverImage || "");
+          setIsPublished(response.data.blog.published || false);
+          setBlog(response.data.blog as IBlog);
         } else if (response.error) {
           throw new Error(response.error.message);
         }

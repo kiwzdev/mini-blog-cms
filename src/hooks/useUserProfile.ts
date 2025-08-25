@@ -4,6 +4,7 @@ import { IUpdateProfileData, IUserProfile, IUserSettings } from "@/types/user";
 import toast from "react-hot-toast";
 import { createUpdatedUserFormData } from "@/helpers/formData";
 import { profileUpdateSchema } from "@/lib/validations/profileUpdateSchema";
+import { useSession } from "next-auth/react";
 
 interface UseUserProfileOptions {
   autoFetch?: boolean; // เรียก API ทันทีหรือไม่
@@ -13,6 +14,8 @@ export const useUserProfile = (
   username: string,
   options: UseUserProfileOptions = {}
 ) => {
+  const { data: session, update } = useSession();
+
   const [profile, setProfile] = useState<IUserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -21,10 +24,12 @@ export const useUserProfile = (
   const { autoFetch = true } = options;
 
   // ดึงข้อมูลโปรไฟล์
-  const fetchProfile = useCallback(async () => {
+  const fetchProfile = useCallback(async (showLoading = true) => {
     if (!username) return false;
 
-    setIsLoading(true);
+    if (showLoading) {
+      setIsLoading(true);
+    }
     setError(null);
 
     try {
@@ -44,7 +49,9 @@ export const useUserProfile = (
       toast.error(errorMessage);
       return false;
     } finally {
-      setIsLoading(false);
+      if (showLoading) {
+        setIsLoading(false);
+      }
     }
   }, [username]);
 
@@ -58,9 +65,7 @@ export const useUserProfile = (
       try {
         toast.loading("Updating profile...", { id: "updateProfile" });
 
-        console.log(updateData);
         const validation = profileUpdateSchema.safeParse(updateData);
-        console.log(validation);
 
         if (!validation.success) {
           const messages = validation.error.issues
@@ -82,6 +87,14 @@ export const useUserProfile = (
         if (response.success) {
           const updatedProfile = response.data as IUserProfile;
           setProfile(updatedProfile);
+
+          // Update session data
+          await update({
+            user: {
+              ...session?.user,
+              profileImage: updatedProfile.profileImage,
+            },
+          });
 
           toast.success("Profile updated successfully!", {
             id: "updateProfile",
@@ -149,9 +162,9 @@ export const useUserProfile = (
     [username, profile]
   );
 
-  // รีเฟรชโปรไฟล์
+  // รีเฟรชโปรไฟล์ (ไม่แสดง loading state)
   const refreshProfile = useCallback(() => {
-    return fetchProfile();
+    fetchProfile(false);
   }, [fetchProfile]);
 
   // รีเซ็ตข้อมูล

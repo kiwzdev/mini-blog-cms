@@ -58,7 +58,8 @@ export interface IComment {
   id: string;
   content: string;
   createdAt: string;
-  isLiked: boolean;
+  isLiked: boolean; // สำหรับ UI state (ง่ายต่อการใช้งาน)
+  likes?: { id: string }[];  // สำหรับ advanced operations (ถ้าต้องการ)
   author: {
     id: string;
     name: string;

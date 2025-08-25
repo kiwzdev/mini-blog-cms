@@ -14,7 +14,7 @@ export const getUserBlogs = async (
     category?: string;
     status?: string;
     // Sorting
-    sortBy?: "createdAt" | "title" | "likes";
+    sortBy?: "createdAt" | "likes";
     sortOrder?: "asc" | "desc";
   }
 ): Promise<ApiResponse> => {
