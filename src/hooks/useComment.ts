@@ -165,8 +165,8 @@ export function useComment(
               comment.id === commentId
                 ? {
                     ...comment,
-                    content: response.data.comments.content,
-                    updatedAt: response.data.comments.updatedAt,
+                    content: response.data.comment.content,
+                    updatedAt: response.data.comment.updatedAt,
                   }
                 : comment
             )

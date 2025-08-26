@@ -1,10 +1,11 @@
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useBlogLike } from "@/hooks/useLike";
 import { getImageUrl } from "@/lib/image";
 import { formatDate } from "@/lib/utils";
 import { IBlogCard } from "@/types/blog";
-import { Clock, MessageCircle } from "lucide-react";
+import { ArrowRight, Clock, MessageCircle } from "lucide-react"; // [ปรับปรุง] เพิ่ม ArrowRight
 import Image from "next/image";
 import Link from "next/link";
 import { LikeButton } from "./LikeButton";
@@ -17,71 +18,75 @@ function BlogCard({ blog }: { blog: IBlogCard }) {
   );
 
   return (
-    <Card className="glass-card overflow-hidden hover:scale-105 transition-all duration-300 group">
+    <Card className="glass-card overflow-hidden group transition-all duration-300 ease-in-out hover:!shadow-2xl hover:!shadow-blue-500/20 hover:-translate-y-2">
       {/* Cover Image */}
-      <div className="relative h-48 overflow-hidden">
-        <Image
-          src={getImageUrl(blog.coverImage || "")}
-          alt={blog.title}
-          fill
-          className="object-cover group-hover:scale-110 transition-transform duration-300"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+      <div className="relative h-52 overflow-hidden">
+        <Link href={`/blog/${blog.id}`} className="block h-full">
+          <Image
+            src={getImageUrl(blog.coverImage || "")}
+            alt={blog.title}
+            fill
+            className="object-cover transition-transform duration-500 ease-in-out group-hover:scale-110"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+        </Link>
       </div>
 
-      <CardContent className="p-6">
-        {/* Author & Date */}
-        <div className="flex items-center gap-3 mb-4">
-          <Link href={`/profile/${blog.author.username}`}>
-            <Image
-              src={getImageUrl(blog.author.profileImage || "")}
-              alt={blog.author.name}
-              width={32}
-              height={32}
-              className="rounded-full"
-            />
-          </Link>
-          <div className="flex-1 min-w-0">
-            <Link href={`/profile/${blog.author.username}`}>
-            <p className="text-sm font-medium truncate">{blog.author.name}</p>
-            </Link>
-            <div className="flex items-center gap-1 text-xs text-slate-500">
-              <Clock className="w-3 h-3" />
-              {formatDate(blog.createdAt)}
-            </div>
-          </div>
-        </div>
-
-        {/* Title & Excerpt */}
+      <CardContent className="p-5 sm:p-6 flex flex-col">
+        {/* Title */}
         <Link href={`/blog/${blog.id}`}>
-          <h2 className="text-xl font-bold mb-3 line-clamp-2 group-hover:text-blue-600 transition-colors">
+          {/* [ปรับปรุง] ขยายขนาดตัวอักษร Title */}
+          <h2 className="text-2xl font-bold mb-3 line-clamp-2 text-slate-800 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
             {blog.title}
           </h2>
         </Link>
-        <p className="text-slate-600 dark:text-slate-400 text-sm mb-4 line-clamp-3">
+        {/* Excerpt */}
+        {/* [ปรับปรุง] ขยายขนาดตัวอักษร Excerpt */}
+        <p className="text-base text-slate-600 dark:text-slate-400 mb-5 line-clamp-3 leading-relaxed flex-grow">
           {blog.excerpt}
         </p>
+        {/* [ปรับปรุง] เปลี่ยน Layout ส่วนท้าย */}
+        <div className="mt-auto pt-4 border-t border-slate-200 dark:border-slate-700">
+          <div className="flex items-center justify-between">
+            {/* Author & Date */}
+            <div className="flex items-center gap-3">
+              <Link href={`/profile/${blog.author.username}`}>
+                <Image
+                  src={getImageUrl(blog.author.profileImage || "")}
+                  alt={blog.author.name}
+                  width={40}
+                  height={40}
+                  className="rounded-full"
+                />
+              </Link>
+              <div>
+                <Link href={`/profile/${blog.author.username}`}>
+                  {/* [ปรับปรุง] ขยายขนาดตัวอักษรชื่อ Author */}
+                  <p className="text-base font-semibold truncate text-slate-700 dark:text-slate-200">
+                    {blog.author.name}
+                  </p>
+                </Link>
+                <div className="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
+                  {" "}
+                  {/* [ปรับปรุง] ขยายขนาดวันที่ */}
+                  <Clock className="w-4 h-4" />
+                  <span>{formatDate(blog.createdAt)}</span>
+                </div>
+              </div>
+            </div>
 
-        {/* Stats & Read More */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4 text-sm text-slate-500">
-            <div className="flex items-center gap-1">
-              <LikeButton
-                likeCount={likeCount}
-                isLiked={isLiked}
-                isLiking={isLiking}
-                toggleLike={toggleLike}
-                size="sm"
-              />
-            </div>
-            <div className="flex items-center gap-1">
-              <MessageCircle className="w-4 h-4" />
-              {(blog._count && blog._count.comments) || 0}
-            </div>
+            {/* [ปรับปรุง] นำปุ่ม "อ่านต่อ" กลับมาและดีไซน์ใหม่ */}
+            <Button
+              asChild
+              variant="ghost"
+              className="group/button rounded-full h-10 px-4 transition-all duration-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 hover:text-blue-700 dark:hover:text-blue-300"
+            >
+              <Link href={`/blog/${blog.id}`}>
+                อ่านต่อ
+                <ArrowRight className="w-4 h-4 ml-2 transition-transform duration-300 group-hover/button:translate-x-1" />
+              </Link>
+            </Button>
           </div>
-          <Button asChild variant="ghost" size="sm">
-            <Link href={`/blog/${blog.id}`}>อ่านต่อ →</Link>
-          </Button>
         </div>
       </CardContent>
     </Card>

@@ -13,12 +13,13 @@ import BlogFilters from "@/components/blog/BlogFilters";
 import Pagination from "@/components/ui/Pagination";
 import { useBlogList } from "@/hooks/useBlogList";
 import { BLOGS_PAGE_LIMIT } from "@/lib/config";
+import Footer from "@/components/Footer/Footer";
 
 export default function BlogPage() {
   const {
     blogs,
     isLoading,
-    isFilterLoading,
+    isFiltering,
     pagination,
     filters,
     handleFilterChange,
@@ -38,10 +39,10 @@ export default function BlogPage() {
           {/* Header */}
           <div className="text-center mb-12">
             <h1 className="text-4xl md:text-6xl font-bold mb-4">
-              <span className="gradient-text">Blog</span>
+              <span className="gradient-text">Mini Blog</span>
             </h1>
             <p className="text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-              บทความและเทคนิคการพัฒนาเว็บไซต์สำหรับ Developer
+              พื้นที่แบ่งปันบทความ ความรู้ และประสบการณ์ต่างๆ
             </p>
           </div>
 
@@ -54,7 +55,7 @@ export default function BlogPage() {
           />
 
           {/* Blogs Grid */}
-          {isFilterLoading ? (
+          {isFiltering ? (
             // แสดง skeleton เมื่อกำลัง filter
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {Array.from({ length: BLOGS_PAGE_LIMIT }).map((_, index) => (
@@ -72,7 +73,7 @@ export default function BlogPage() {
               </div>
 
               {/* Pagination */}
-              <Pagination 
+              <Pagination
                 pagination={pagination}
                 onPageChange={handlePageChange}
                 className="mb-8"
@@ -91,6 +92,7 @@ export default function BlogPage() {
           )}
         </div>
       </div>
+      <Footer />
     </>
   );
 }

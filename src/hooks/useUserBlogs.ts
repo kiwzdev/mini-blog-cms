@@ -19,7 +19,7 @@ export const useUserBlogs = (userId: string) => {
   const [error, setError] = useState<string | null>(null);
 
   const fetchBlogs = useCallback(
-    async (page = 1, limit = 3, append = false, currentFilters = filters) => {
+    async (page = 1, limit = BLOGS_PAGE_LIMIT, append = false, currentFilters = filters) => {
       if (!userId) return false;
 
       // Set appropriate loading state
@@ -85,23 +85,8 @@ export const useUserBlogs = (userId: string) => {
         }
       }
     },
-    [userId, filters]
+    [userId, filters.category, filters.status, filters.dateRange]
   );
-
-  // Auto fetch เมื่อ filters เปลี่ยน (ยกเว้น search)
-  useEffect(() => {
-    if (userId) {
-      // สร้าง debounce สำหรับ search
-      const timeoutId = setTimeout(
-        () => {
-          fetchBlogs(1, BLOGS_PAGE_LIMIT, false, filters);
-        },
-        filters.search ? 500 : 0
-      ); // Debounce 500ms สำหรับ search, ทันทีสำหรับ filters อื่น
-
-      return () => clearTimeout(timeoutId);
-    }
-  }, [userId, filters, fetchBlogs]);
 
   // โหลดเพิ่ม blogs
   const loadMoreBlogs = useCallback(async () => {

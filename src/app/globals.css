@@ -120,3 +120,22 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* globals.css */
+.glass-card {
+  /* --- Light Mode --- */
+  background: rgba(255, 255, 255, 0.6); /* สีพื้นหลังโปร่งแสง */
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px); /* สำหรับ Safari */
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1); /* เงามีสีฟ้าเล็กน้อย */
+}
+
+.dark .glass-card {
+  /* --- Dark Mode --- */
+  background: rgba(15, 23, 42, 0.6); /* --slate-900-- สีพื้นหลังโปร่งแสงสำหรับ Dark Mode */
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1); /* เส้นขอบสีขาวจางๆ */
+  box-shadow: 0 8px 32px 0 rgba(0, 119, 255, 0.15); /* เงาสีฟ้าเรืองๆ */
+}

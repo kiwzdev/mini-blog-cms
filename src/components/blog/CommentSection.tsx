@@ -192,40 +192,23 @@ export function CommentSection({
         {/* Comments List */}
         <div className="space-y-4">
           {displayComments.map((comment) => {
-            // สร้าง useCommentLike สำหรับแต่ละ comment
-            const CommentWithLike = () => {
-              const { isLiked, likeCount, isLiking, toggleLike } =
-                useCommentLike(
-                  comment.id,
-                  comment.isLiked || false, // ต้องเพิ่มใน IComment type
-                  comment._count?.likes || 0 // ต้องเพิ่มใน IComment type
-                );
-
-              return (
-                <CommentItem
-                  key={comment.id}
-                  comment={comment}
-                  blogAuthorId={blogAuthorId}
-                  isSubmitting={isSubmitting}
-                  canEdit={canEditComment(comment)}
-                  canDelete={canDeleteComment(comment)}
-                  onEdit={handleEditComment}
-                  onDelete={handleDeleteComment}
-                  onUpdate={handleUpdateComment}
-                  onCancelEdit={handleCancelEdit}
-                  editingCommentId={editingCommentId}
-                  editContent={editContent}
-                  setEditContent={setEditContent}
-                  // Like props
-                  isLiked={isLiked}
-                  likeCount={likeCount}
-                  isLiking={isLiking}
-                  onToggleLike={toggleLike}
-                />
-              );
-            };
-
-            return <CommentWithLike key={comment.id} />;
+            return (
+              <CommentItem
+                key={comment.id}
+                comment={comment}
+                blogAuthorId={blogAuthorId}
+                isSubmitting={isSubmitting}
+                canEdit={canEditComment(comment)}
+                canDelete={canDeleteComment(comment)}
+                onEdit={handleEditComment}
+                onDelete={handleDeleteComment}
+                onUpdate={handleUpdateComment}
+                onCancelEdit={handleCancelEdit}
+                editingCommentId={editingCommentId}
+                editContent={editContent}
+                setEditContent={setEditContent}
+              />
+            );
           })}
         </div>
 

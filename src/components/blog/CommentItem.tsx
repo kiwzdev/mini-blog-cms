@@ -2,12 +2,13 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { formatDate } from "@/lib/utils";
-import { Edit2, Shield, Trash2, Heart } from "lucide-react";
+import { Edit2, Shield, Trash2 } from "lucide-react";
 import { IComment } from "@/types/blog";
 import { useSession } from "next-auth/react";
 import { LikeButton } from "./LikeButton";
 import { getImageUrl } from "@/lib/image";
 import Link from "next/link";
+import { useCommentLike } from "@/hooks/useLike";
 
 interface CommentItemProps {
   comment: IComment;
@@ -23,10 +24,6 @@ interface CommentItemProps {
   editContent: string;
   setEditContent: (content: string) => void;
   // Like props
-  isLiked: boolean;
-  likeCount: number;
-  isLiking: boolean;
-  onToggleLike: () => void;
 }
 
 export function CommentItem({
@@ -42,12 +39,14 @@ export function CommentItem({
   editingCommentId,
   editContent,
   setEditContent,
-  isLiked,
-  likeCount,
-  isLiking,
-  onToggleLike,
 }: CommentItemProps) {
   const { data: session } = useSession();
+
+  const { isLiked, likeCount, isLiking, toggleLike } = useCommentLike(
+    comment.id,
+    comment.isLiked || false,
+    comment._count?.likes || 0
+  );
 
   const isBlogOwner =
     session?.user?.id === blogAuthorId && session.user.id !== comment.author.id;
@@ -165,7 +164,7 @@ export function CommentItem({
                 isLiked={isLiked}
                 likeCount={likeCount}
                 isLiking={isLiking}
-                toggleLike={onToggleLike}
+                toggleLike={toggleLike}
                 size="sm"
               />
             </div>

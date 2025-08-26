@@ -13,7 +13,7 @@ const BLOG_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 async function checkBlogExists(blogId: string): Promise<boolean> {
   const cacheKey = `blog_${blogId}`;
   const cached = blogExistsCache.get(cacheKey);
-  
+
   if (cached !== undefined) {
     return cached;
   }
@@ -25,12 +25,47 @@ async function checkBlogExists(blogId: string): Promise<boolean> {
 
   const exists = !!blog;
   blogExistsCache.set(cacheKey, exists);
-  
+
   setTimeout(() => {
     blogExistsCache.delete(cacheKey);
   }, BLOG_CACHE_TTL);
 
   return exists;
+}
+
+// ✅ Improved cache to store blog data with authorId
+const blogCache = new Map<
+  string,
+  { exists: boolean; authorId: string | null }
+>();
+
+async function getBlogInfo(
+  blogId: string
+): Promise<{ exists: boolean; authorId: string | null }> {
+  const cacheKey = `blog_${blogId}`;
+  const cached = blogCache.get(cacheKey);
+
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  const blog = await prisma.blog.findUnique({
+    where: { id: blogId },
+    select: { id: true, authorId: true },
+  });
+
+  const blogInfo = {
+    exists: !!blog,
+    authorId: blog?.authorId || null,
+  };
+
+  blogCache.set(cacheKey, blogInfo);
+
+  setTimeout(() => {
+    blogCache.delete(cacheKey);
+  }, BLOG_CACHE_TTL);
+
+  return blogInfo;
 }
 
 // POST /api/blogs/[blogId]/like - Toggle like on blog
@@ -39,7 +74,7 @@ export async function POST(
   { params }: { params: ParamsType }
 ) {
   try {
-    // ✅ 2. Early auth check
+    // ✅ Early auth check
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return createErrorResponse({
@@ -52,9 +87,9 @@ export async function POST(
     const { blogId } = await params;
     const userId = session.user.id;
 
-    // ✅ 3. Use cached blog existence check
-    const blogExists = await checkBlogExists(blogId);
-    if (!blogExists) {
+    // ✅ Get blog info with authorId
+    const blogInfo = await getBlogInfo(blogId);
+    if (!blogInfo.exists || !blogInfo.authorId) {
       return createErrorResponse({
         code: "BLOG_NOT_FOUND",
         message: "Blog not found",
@@ -62,64 +97,91 @@ export async function POST(
       });
     }
 
-    // ✅ 4. Use upsert pattern - Single database operation
+    // ✅ Self-like prevention
+    if (blogInfo.authorId === userId) {
+      return createErrorResponse({
+        code: "SELF_LIKE_NOT_ALLOWED",
+        message: "You cannot like your own blog",
+        status: 400,
+      });
+    }
+
+    // ✅ Use upsert pattern with proper transactions
     try {
       // Try to create the like first
-      await prisma.blogLike.create({
+      const newLike = await prisma.blogLike.create({
         data: {
           blogId: blogId,
           userId: userId,
         },
       });
 
-      // ✅ 5. Return like count in response for UI optimization
+      // ✅ Single transaction for like + increment
+      await prisma.user.update({
+        where: { id: blogInfo.authorId },
+        data: {
+          totalBlogLikes: {
+            increment: 1,
+          },
+        },
+      });
+
+      // ✅ Get final count
       const likeCount = await prisma.blogLike.count({
         where: { blogId: blogId },
       });
 
       return createSuccessResponse({
-        data: { 
+        data: {
           liked: true,
           likeCount: likeCount,
         },
         message: "Blog liked successfully",
       });
-
     } catch (createError: unknown) {
-      // ✅ Type guard for Prisma error
+      // ✅ Handle unique constraint error (already liked)
       if (
         createError &&
-        typeof createError === 'object' &&
-        'code' in createError &&
-        createError.code === 'P2002'
+        typeof createError === "object" &&
+        "code" in createError &&
+        createError.code === "P2002"
       ) {
-        // Unique constraint error - like already exists, so delete it (unlike)
-        await prisma.blogLike.delete({
-          where: {
-            blogId_userId: {
-              blogId: blogId,
-              userId: userId,
+        // ✅ Unlike with transaction
+        await prisma.$transaction([
+          prisma.blogLike.delete({
+            where: {
+              blogId_userId: {
+                blogId: blogId,
+                userId: userId,
+              },
             },
-          },
-        });
+          }),
+          prisma.user.update({
+            where: { id: blogInfo.authorId! },
+            data: {
+              totalBlogLikes: {
+                decrement: 1,
+              },
+            },
+          }),
+        ]);
 
         const likeCount = await prisma.blogLike.count({
           where: { blogId: blogId },
         });
 
         return createSuccessResponse({
-          data: { 
+          data: {
             liked: false,
             likeCount: likeCount,
           },
           message: "Blog unliked successfully",
         });
       }
-      
+
       // Re-throw if it's a different error
       throw createError;
     }
-
   } catch (error) {
     console.error("Error toggling like:", error);
     return createErrorResponse({
@@ -173,7 +235,6 @@ export async function GET(
       },
       message: "Like status retrieved successfully",
     });
-
   } catch (error) {
     console.error("Error getting like status:", error);
     return createErrorResponse({

@@ -53,8 +53,8 @@ export async function POST(
         const existingFollow = await tx.follow.findUnique({
           where: {
             followingId_followerId: {
-              followingId: userId,
               followerId: currentUserId,
+              followingId: userId,
             },
           },
           select: {
@@ -227,8 +227,8 @@ export async function GET(
       prisma.follow.findUnique({
         where: {
           followingId_followerId: {
-            followingId: userId,
-            followerId: currentUserId,
+            followingId: currentUserId,
+            followerId: userId,
           },
         },
         select: { id: true },

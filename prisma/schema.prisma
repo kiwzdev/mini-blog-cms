@@ -27,7 +27,8 @@ model User {
   updatedAt     DateTime  @updatedAt
 
   // Stats
-  views Int @default(0)
+  views          Int @default(0)
+  totalBlogLikes Int @default(0) // 👈 เพิ่มตรงนี้
 
   // Profile
   bio          String?
@@ -135,8 +136,8 @@ model BlogLike {
   blog Blog @relation(fields: [blogId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([blogId], name: "blog_like_blog_idx")
   @@unique([blogId, userId])
+  @@index([blogId], name: "blog_like_blog_idx")
   @@map("blog_likes")
 }
 
@@ -160,11 +161,11 @@ model Follow {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
 
-  followingId String // User ที่ถูก follow
-  followerId  String // User ที่ follow
+  followingId String // User ที่ follow
+  followerId  String // User ที่ถูก follow
 
-  following User @relation(fields: [followingId], references: [id], onDelete: Cascade)
-  follower  User @relation("UserFollowers", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+  follower  User @relation(fields: [followerId], references: [id], onDelete: Cascade)
 
   @@unique([followingId, followerId])
   @@map("follows")

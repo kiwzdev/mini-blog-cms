@@ -14,7 +14,7 @@ export function MobileMenu({
   isOpen: boolean
   setIsOpen: (open: boolean) => void
   isLoading: boolean
-  session: Session
+  session: Session | null
   isAuthenticated: boolean
   isAdmin: boolean
 }) {

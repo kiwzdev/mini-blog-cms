@@ -33,6 +33,8 @@ function buildWhereClause(
   const search = searchParams.get("search")?.trim();
   const category = searchParams.get("category")?.trim();
   const status = searchParams.get("status")?.trim();
+  const dateRangeStart = searchParams.get("dateRange[start]");
+  const dateRangeEnd = searchParams.get("dateRange[end]");
 
   const whereClause: Prisma.BlogWhereInput = {};
 
@@ -56,6 +58,19 @@ function buildWhereClause(
   // Filter by category
   if (category && category !== "all") {
     whereClause.category = category;
+  }
+
+  // Filter by date range
+  if (dateRangeStart || dateRangeEnd) {
+    whereClause.createdAt = {};
+
+    if (dateRangeStart) {
+      whereClause.createdAt.gte = new Date(dateRangeStart);
+    }
+
+    if (dateRangeEnd) {
+      whereClause.createdAt.lte = new Date(dateRangeEnd);
+    }
   }
 
   return whereClause;
@@ -149,15 +164,15 @@ export async function GET(request: NextRequest) {
 
     return createSuccessResponse({
       data: {
-        blogs: blogsWithLikeStatus
+        blogs: blogsWithLikeStatus,
       },
       message: "Blogs fetched successfully",
-      meta:{
+      meta: {
         total,
         page,
         limit,
-        pages: Math.ceil(total / limit)
-      }
+        pages: Math.ceil(total / limit),
+      },
     });
   } catch (error) {
     console.error("Error fetching blogs:", error);

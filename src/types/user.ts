@@ -31,7 +31,7 @@ export interface IUserProfile {
   lastActiveAt?: Date;
   isVerified?: Date;
 
-  isFollowing?: boolean;
+  isFollowed?: boolean;
 
   // Professional info
   jobTitle?: string;
@@ -83,7 +83,7 @@ export interface IUserCount {
   blogs: number;
   followers: number;
   following: number;
-  blogLikes: number;
+  totalBlogLikes: number;
   comments: number;
 }
 
@@ -98,12 +98,12 @@ export interface IUpdateProfileData {
   education?: string;
   email?: string;
   phone?: string;
-  socialLinks?: IUserProfile['socialLinks'];
+  socialLinks?: IUserProfile["socialLinks"];
 }
 
 // สำหรับตั้งค่าความเป็นส่วนตัว
 export interface IUpdateSettingsData {
-  settings?: IUserProfile['settings'];
+  settings?: IUserProfile["settings"];
 }
 
 // IUpdatePrivateData

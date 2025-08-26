@@ -78,7 +78,7 @@ export default function EditBlogPage() {
       try {
         setLoading(true);
         const response = await getBlogById(blogId);
-        console.log(response)
+        console.log(response);
 
         if (response.success) {
           setTitle(response.data.blog.title || "");
@@ -221,7 +221,7 @@ export default function EditBlogPage() {
   else
     return (
       <>
-        <SmartNavigation/>
+        <SmartNavigation />
         <div className="min-h-screen py-12 px-4">
           <div className="space-y-6 max-w-6xl mx-auto">
             {/* Header */}
@@ -251,6 +251,8 @@ export default function EditBlogPage() {
                       variant="destructive"
                       size="sm"
                       disabled={isDeleting}
+                      className="bg-red-600 hover:bg-red-700 focus:ring-2 focus:ring-red-400 focus:ring-offset-2 
+             transition-all duration-200 shadow-sm hover:shadow-md"
                     >
                       <Trash2 className="w-4 h-4 mr-2" />
                       ลบ
@@ -278,11 +280,13 @@ export default function EditBlogPage() {
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
-
                 <Button
                   variant="outline"
                   onClick={() => handleSave(false)}
                   disabled={isSaving}
+                  className="transition-all duration-200 border-gray-300 dark:border-gray-600 
+             hover:border-blue-500 hover:text-blue-600 dark:hover:border-blue-400 
+             dark:hover:text-blue-400 hover:shadow-md"
                 >
                   <Save className="w-4 h-4 mr-2" />
                   บันทึกการแก้ไข
@@ -291,7 +295,8 @@ export default function EditBlogPage() {
                 <Button
                   onClick={() => handleSave(true)}
                   disabled={isSaving}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600"
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-purple-600 hover:to-pink-500
+             text-white shadow-md hover:shadow-lg transition-all duration-300"
                 >
                   <Eye className="w-4 h-4 mr-2" />
                   อัปเดต
@@ -303,7 +308,11 @@ export default function EditBlogPage() {
               {/* Main Content */}
               <div className="lg:col-span-2">
                 {/* Title and Editor Selection */}
-                <Card className="glass-card">
+                <Card
+                  className="glass-card bg-white/70 dark:bg-gray-800/60 backdrop-blur-lg 
+                border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-lg 
+                transition-all duration-300 rounded-2xl"
+                >
                   <CardContent className="px-6 py-2 space-y-6">
                     {/* Title Section */}
                     <div>
@@ -315,7 +324,9 @@ export default function EditBlogPage() {
                         placeholder="ใส่ชื่อเรื่องที่น่าสนใจ..."
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
-                        className="mt-2 text-lg"
+                        className="mt-2 text-lg border-gray-300 dark:border-gray-600 
+             focus:ring-2 focus:ring-blue-400 dark:focus:ring-purple-500 
+             focus:border-transparent transition-all duration-200"
                       />
                     </div>
 
@@ -357,7 +368,11 @@ export default function EditBlogPage() {
               {/* Sidebar */}
               <div className="space-y-6">
                 {/* Status */}
-                <Card className="glass-card">
+                <Card
+                  className="glass-card bg-white/70 dark:bg-gray-800/60 backdrop-blur-lg 
+                border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-lg 
+                transition-all duration-300 rounded-2xl"
+                >
                   <CardHeader>
                     <CardTitle>สถานะโพสต์</CardTitle>
                   </CardHeader>
@@ -382,7 +397,11 @@ export default function EditBlogPage() {
                 </Card>
 
                 {/* Category selection */}
-                <Card className="glass-card">
+                <Card
+                  className="glass-card bg-white/70 dark:bg-gray-800/60 backdrop-blur-lg 
+                border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-lg 
+                transition-all duration-300 rounded-2xl"
+                >
                   <CardHeader>
                     <CardTitle>หมวดหมู่</CardTitle>
                   </CardHeader>
@@ -404,8 +423,8 @@ export default function EditBlogPage() {
                               >
                                 <cat.icon className="w-3 h-3 text-white" />
                               </div>
-                              <span className="text-gray-800 font-medium">
-                                {cat.name}
+                              <span className="text-gray-800 font-medium dark:text-white">
+                                {cat.nameEn}
                               </span>
                             </div>
                           </SelectItem>
@@ -416,7 +435,11 @@ export default function EditBlogPage() {
                 </Card>
 
                 {/* Cover Image */}
-                <Card className="glass-card">
+                <Card
+                  className="glass-card bg-white/70 dark:bg-gray-800/60 backdrop-blur-lg 
+                border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-lg 
+                transition-all duration-300 rounded-2xl"
+                >
                   <CardHeader>
                     <CardTitle>รูปปก</CardTitle>
                   </CardHeader>
@@ -425,6 +448,9 @@ export default function EditBlogPage() {
                       placeholder="URL รูปภาพ"
                       value={coverImage}
                       onChange={onCoverImageUrlChange}
+                      className="mt-2 text-lg border-gray-300 dark:border-gray-600 
+             focus:ring-1 focus:ring-blue-400 dark:focus:ring-purple-500 
+             focus:border-transparent transition-all duration-200"
                     />
                     <Button variant="outline" className="w-full" asChild>
                       <label htmlFor="upload" className="cursor-pointer">
@@ -456,7 +482,11 @@ export default function EditBlogPage() {
                 </Card>
 
                 {/* Settings */}
-                <Card className="glass-card">
+                <Card
+                  className="glass-card bg-white/70 dark:bg-gray-800/60 backdrop-blur-lg 
+                border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-lg 
+                transition-all duration-300 rounded-2xl"
+                >
                   <CardHeader>
                     <CardTitle>การตั้งค่า</CardTitle>
                   </CardHeader>

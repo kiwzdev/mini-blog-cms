@@ -13,7 +13,7 @@ export function UserMenu({
   setOpen,
 }: {
   isLoading: boolean;
-  session: Session;
+  session: Session | null;
   isAuthenticated: boolean;
   open: boolean;
   setOpen: (open: boolean) => void;
@@ -24,10 +24,10 @@ export function UserMenu({
 
   if (isAuthenticated) {
     return (
-      <div className="relative">
+      <div className="relative flex items-center">
         <button onClick={() => setOpen(!open)} className="focus:outline-none">
           <Image
-            src={getImageUrl(session.user.profileImage || "")}
+            src={getImageUrl(session?.user.profileImage || "")}
             alt="Profile"
             width={30}
             height={30}
@@ -36,11 +36,11 @@ export function UserMenu({
         </button>
 
         {open && (
-          <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border rounded-lg shadow-lg z-50">
+          <div className="absolute right-0 top-10 mt-2 w-48 bg-white dark:bg-gray-800 border rounded-lg shadow-lg z-50">
             <ul className="py-2 text-sm">
               <li>
                 <Link
-                  href={`/profile/${session.user.username}`}
+                  href={`/profile/${session?.user.username}`}
                   className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
                   onClick={() => setOpen(false)}
                 >

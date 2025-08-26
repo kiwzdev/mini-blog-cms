@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import prisma from "@/lib/db";
 import { createSuccessResponse, createErrorResponse } from "@/lib/api-response";
-import { IUserSettings } from "@/types/user";
+import { IUpdateProfileData, IUserSettings } from "@/types/user";
 import { isValidImageType, MAX_FILE_SIZE } from "@/helpers/uploadFile";
 import cloudinary from "@/lib/cloudinary";
 import { Prisma } from "@prisma/client";
@@ -11,7 +11,7 @@ import { Prisma } from "@prisma/client";
 type ParamsType = Promise<{ username: string }>;
 
 // Helper function to validate profile data
-function validateProfileData(data: any): string | null {
+function validateProfileData(data: IUpdateProfileData): string | null {
   if (data.name && data.name.length > 100)
     return "Name too long (max 100 characters)";
   if (data.bio && data.bio.length > 500)
@@ -59,6 +59,7 @@ export async function GET(
         company: true,
         education: true,
         views: true,
+        totalBlogLikes: true,
         createdAt: true,
         updatedAt: true,
         // Conditional fields
@@ -73,7 +74,6 @@ export async function GET(
             blogs: true,
             followers: true,
             following: true,
-            blogLikes: true,
             comments: true,
           },
         },
@@ -110,9 +110,9 @@ export async function GET(
     // รอ views update (หรือ skip) และส่ง response
     const updatedViews = await viewsPromise;
 
-    let isFollowing;
+    let isFollowed;
     if(!isOwnProfile){
-      isFollowing = await prisma.follow.findFirst({
+      isFollowed = await prisma.follow.findFirst({
         where: {
           followerId: session?.user?.id,
           followingId: user.id,
@@ -127,8 +127,9 @@ export async function GET(
       _count: {
         ...user._count,
         views: updatedViews?.views || user.views,
+        totalBlogLikes: user.totalBlogLikes,
       },
-      isFollowing: isFollowing ? true : false,
+      isFollowed: isFollowed ? true : false,
       // Include private fields only for own profile
       ...(isOwnProfile && {
         email: user.email || "",
@@ -335,6 +336,7 @@ export async function PUT(
           birthDate: true,
           settings: true,
           views: true,
+          totalBlogLikes: true,
           createdAt: true,
           updatedAt: true,
           _count: {
@@ -342,7 +344,6 @@ export async function PUT(
               blogs: true,
               followers: true,
               following: true,
-              blogLikes: true,
               comments: true,
             },
           },
@@ -369,6 +370,7 @@ export async function PUT(
       ...user,
       _count: {
         ...user._count,
+        totalBlogLikes: user.totalBlogLikes,
         views: user.views,
       },
     };
