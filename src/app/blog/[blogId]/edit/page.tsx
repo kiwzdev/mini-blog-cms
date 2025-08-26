@@ -78,7 +78,6 @@ export default function EditBlogPage() {
       try {
         setLoading(true);
         const response = await getBlogById(blogId);
-        console.log(response);
 
         if (response.success) {
           setTitle(response.data.blog.title || "");
