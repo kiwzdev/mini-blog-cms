@@ -1,5 +1,6 @@
 // app/api/auth/signup/route.ts
-import { NextRequest, NextResponse } from "next/server";
+
+import { NextRequest } from "next/server";
 import bcrypt from "bcryptjs";
 import { createErrorResponse, createSuccessResponse } from "@/lib/api-response";
 import prisma from "@/lib/db";
@@ -94,7 +95,6 @@ const validatePassword = (
   const hasUpperCase = /[A-Z]/.test(password);
   const hasLowerCase = /[a-z]/.test(password);
   const hasNumbers = /\d/.test(password);
-  const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
 
   if (!hasUpperCase || !hasLowerCase || !hasNumbers) {
     return {
@@ -107,7 +107,7 @@ const validatePassword = (
   return { isValid: true };
 };
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest) : Promise<Response>{
   try {
     // Parse and validate request body
     const body = await req.json();
@@ -298,7 +298,7 @@ export async function POST(req: NextRequest) {
 }
 
 // Optional: Add GET endpoint to check username/email availability
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest): Promise<Response> {
   try {
     const { searchParams } = new URL(req.url);
     const username = searchParams.get("username");

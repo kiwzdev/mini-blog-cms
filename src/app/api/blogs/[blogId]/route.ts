@@ -1,11 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "../../auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/db";
 import { UpdateBlogInput } from "@/lib/validations/blogSchema";
 import { createErrorResponse, createSuccessResponse } from "@/lib/api-response";
 import { Prisma } from "@prisma/client";
-import { IComment } from "@/types/blog";
 
 type ParamsType = Promise<{ blogId: string }>;
 
@@ -62,7 +61,7 @@ async function incrementViewCount(blogId: string, authorId: string, currentUserI
 // GET /api/blogs/[blogId] - Get single blog by blogId
 export async function GET(
   request: NextRequest,
-  { params }: { params: ParamsType }
+  { params }: { params: Promise<ParamsType>}
 ) {
   try {
     const { blogId } = await params;
@@ -325,7 +324,7 @@ export async function GET(
 // ✅ 12. Optimized PUT endpoint
 export async function PUT(
   request: NextRequest,
-  { params }: { params: ParamsType }
+  { params }: { params: Promise<ParamsType> }
 ) {
   try {
     // Early auth check
@@ -434,7 +433,7 @@ export async function PUT(
 // ✅ 13. Optimized DELETE endpoint
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: ParamsType }
+  { params }: {params: Promise<ParamsType> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -474,7 +473,6 @@ export async function DELETE(
     });
 
     return createSuccessResponse({
-      data: null,
       message: "Blog deleted successfully",
     });
 

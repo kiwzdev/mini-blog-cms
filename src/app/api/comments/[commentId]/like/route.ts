@@ -1,4 +1,4 @@
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import { createErrorResponse, createSuccessResponse } from "@/lib/api-response";
 import prisma from "@/lib/db";
 import { getServerSession } from "next-auth";
@@ -9,7 +9,7 @@ type ParamsType = Promise<{ commentId: string }>;
 // POST /api/comments/[commentId]/like - Toggle like on comment
 export async function POST(
   request: NextRequest,
-  { params }: { params: ParamsType }
+  { params }: { params: Promise<ParamsType> }
 ) {
   try {
     const session = await getServerSession(authOptions);

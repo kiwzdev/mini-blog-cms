@@ -1,4 +1,4 @@
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import { createErrorResponse, createSuccessResponse } from "@/lib/api-response";
 import prisma from "@/lib/db";
 import { getServerSession } from "next-auth";
@@ -71,7 +71,7 @@ async function getBlogInfo(
 // POST /api/blogs/[blogId]/like - Toggle like on blog
 export async function POST(
   request: NextRequest,
-  { params }: { params: ParamsType }
+  { params }: { params: Promise<ParamsType> }
 ) {
   try {
     // ✅ Early auth check
@@ -109,7 +109,7 @@ export async function POST(
     // ✅ Use upsert pattern with proper transactions
     try {
       // Try to create the like first
-      const newLike = await prisma.blogLike.create({
+      await prisma.blogLike.create({
         data: {
           blogId: blogId,
           userId: userId,
@@ -195,7 +195,7 @@ export async function POST(
 // TODO
 export async function GET(
   request: NextRequest,
-  { params }: { params: ParamsType }
+  { params }: { params: Promise<ParamsType> }
 ) {
   try {
     const session = await getServerSession(authOptions);

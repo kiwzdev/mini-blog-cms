@@ -2,14 +2,9 @@
 import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { createErrorResponse, createSuccessResponse } from "@/lib/api-response";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/db";
 import { IComment } from "@/types/blog";
-
-type ParamsType = {
-  blogId: string;
-  commentId: string;
-};
 
 // Constants
 const MAX_COMMENT_LENGTH = 1000;
@@ -37,16 +32,16 @@ const COMMENT_SELECT_FIELDS = {
 
 // Helper function to validate comment content
 function validateCommentContent(content: string): string | null {
-  if (!content || typeof content !== 'string') {
+  if (!content || typeof content !== "string") {
     return "Comment content is required";
   }
 
   const trimmedContent = content.trim();
-  
+
   if (trimmedContent.length < MIN_COMMENT_LENGTH) {
     return "Comment content cannot be empty";
   }
-  
+
   if (trimmedContent.length > MAX_COMMENT_LENGTH) {
     return `Comment content must be less than ${MAX_COMMENT_LENGTH} characters`;
   }
@@ -56,9 +51,9 @@ function validateCommentContent(content: string): string | null {
 
 // Helper function to check comment ownership and permissions
 async function checkCommentPermissions(
-  commentId: string, 
-  blogId: string, 
-  userId: string, 
+  commentId: string,
+  blogId: string,
+  userId: string,
   requireOwnership = false
 ) {
   const comment = await prisma.comment.findFirst({
@@ -78,25 +73,30 @@ async function checkCommentPermissions(
   });
 
   if (!comment) {
-    return { error: "COMMENT_NOT_FOUND", message: "Comment not found", status: 404 };
+    return {
+      error: "COMMENT_NOT_FOUND",
+      message: "Comment not found",
+      status: 404,
+    };
   }
 
   const isCommentAuthor = comment.authorId === userId;
   const isBlogOwner = comment.blog?.authorId === userId;
 
   if (requireOwnership && !isCommentAuthor) {
-    return { 
-      error: "FORBIDDEN", 
-      message: "You can only edit your own comments", 
-      status: 403 
+    return {
+      error: "FORBIDDEN",
+      message: "You can only edit your own comments",
+      status: 403,
     };
   }
 
   if (!requireOwnership && !isCommentAuthor && !isBlogOwner) {
-    return { 
-      error: "FORBIDDEN", 
-      message: "You can only delete your own comments or comments on your blogs", 
-      status: 403 
+    return {
+      error: "FORBIDDEN",
+      message:
+        "You can only delete your own comments or comments on your blogs",
+      status: 403,
     };
   }
 
@@ -105,7 +105,20 @@ async function checkCommentPermissions(
 
 // Helper function to transform comment to IComment interface
 function transformCommentResponse(
-  comment: any, 
+  comment: {
+    id: string;
+    content: string;
+    createdAt: Date;
+    author: {
+      id: string;
+      name: string | null;
+      profileImage: string | null;
+      username: string | null;
+    };
+    _count: {
+      likes: number;
+    };
+  },
   isLiked: boolean = false
 ): IComment {
   return {
@@ -125,10 +138,15 @@ function transformCommentResponse(
   };
 }
 
+type ParamsType = {
+  blogId: string;
+  commentId: string;
+};
+
 // PUT /api/blogs/{blogId}/comments/{commentId} - Edit a comment
 export async function PUT(
   request: NextRequest,
-  { params }: { params: ParamsType }
+  { params }: {params: Promise<ParamsType>}
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -157,13 +175,13 @@ export async function PUT(
 
     // Check permissions (only comment author can edit)
     const permissionCheck = await checkCommentPermissions(
-      commentId, 
-      blogId, 
-      session.user.id, 
+      commentId,
+      blogId,
+      session.user.id,
       true // requireOwnership = true for editing
     );
 
-    if ('error' in permissionCheck) {
+    if ("error" in permissionCheck) {
       return createErrorResponse({
         code: permissionCheck.error as string,
         message: permissionCheck.message as string,
@@ -195,7 +213,7 @@ export async function PUT(
     ]);
 
     const commentResponse = transformCommentResponse(
-      updatedComment, 
+      updatedComment,
       !!userLike
     );
 
@@ -216,7 +234,7 @@ export async function PUT(
 // DELETE /api/blogs/{blogId}/comments/{commentId} - Delete a comment
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: ParamsType }
+  { params }: { params: Promise<ParamsType> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -233,13 +251,13 @@ export async function DELETE(
 
     // Check permissions (comment author OR blog owner can delete)
     const permissionCheck = await checkCommentPermissions(
-      commentId, 
-      blogId, 
-      session.user.id, 
+      commentId,
+      blogId,
+      session.user.id,
       false // requireOwnership = false for deletion
     );
 
-    if ('error' in permissionCheck) {
+    if ("error" in permissionCheck) {
       return createErrorResponse({
         code: permissionCheck.error as string,
         message: permissionCheck.message as string,
@@ -253,7 +271,7 @@ export async function DELETE(
     });
 
     return createSuccessResponse({
-      data: { 
+      data: {
         commentId,
         blogId,
         deletedAt: new Date().toISOString(),

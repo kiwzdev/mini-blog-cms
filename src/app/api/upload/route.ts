@@ -1,12 +1,12 @@
 // app/api/upload/route.ts
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import cloudinary from "@/lib/cloudinary";
 import { extractPublicIdFromUrl } from "@/lib/image/cloudinary";
 import { createErrorResponse, createSuccessResponse } from "@/lib/api-response";
 import { isValidImageType, MAX_FILE_SIZE } from "@/helpers/uploadFile";
 
 // Upload File - Optimized
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest) : Promise<Response>{
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File;
@@ -132,7 +132,7 @@ export async function POST(req: NextRequest) {
         bytes: result.bytes,
         // เพิ่ม responsive URLs สำหรับ optimization
         responsiveUrls:
-          result.responsive_breakpoints?.[0]?.breakpoints?.map((bp: any) => ({
+          result.responsive_breakpoints?.[0]?.breakpoints?.map((bp: { width: number; secure_url: string }) => ({
             width: bp.width,
             url: bp.secure_url,
           })) || [],
@@ -150,7 +150,7 @@ export async function POST(req: NextRequest) {
 }
 
 // Delete File - Optimized with better error handling
-export async function DELETE(req: NextRequest) {
+export async function DELETE(req: NextRequest): Promise<Response> {
   try {
     const { searchParams } = new URL(req.url);
     const imageUrl = searchParams.get("url");
@@ -169,7 +169,6 @@ export async function DELETE(req: NextRequest) {
     }
 
     console.log(`Deleting image with publicId: ${targetPublicId}`);
-    const startTime = Date.now();
 
     // Delete with timeout
     const deleteRes = (await Promise.race([
@@ -177,10 +176,7 @@ export async function DELETE(req: NextRequest) {
       new Promise((_, reject) =>
         setTimeout(() => reject(new Error("Delete timeout")), 10000)
       ),
-    ])) as any;
-
-    const deleteTime = Date.now() - startTime;
-    console.log(`Delete operation took: ${deleteTime}ms`);
+    ])) as { result: string };
 
     if (deleteRes.result === "ok" || deleteRes.result === "not found") {
       return createSuccessResponse({

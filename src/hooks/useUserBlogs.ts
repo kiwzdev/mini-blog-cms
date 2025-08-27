@@ -1,7 +1,7 @@
 import { getUserBlogs } from "@/api/user";
 import { BLOGS_PAGE_LIMIT } from "@/lib/config";
 import { Filters, IBlogCard } from "@/types/blog";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 
 export const useUserBlogs = (userId: string) => {
   const [blogs, setBlogs] = useState<IBlogCard[]>([]);

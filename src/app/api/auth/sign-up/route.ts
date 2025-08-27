@@ -33,7 +33,7 @@ const validatePassword = (
   return { isValid: true };
 };
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<Response> {
   try {
     // Parse request body
     const body = await req.json();

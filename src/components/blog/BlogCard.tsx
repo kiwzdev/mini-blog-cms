@@ -1,32 +1,25 @@
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { useBlogLike } from "@/hooks/useLike";
 import { getImageUrl } from "@/lib/image";
 import { formatDate } from "@/lib/utils";
 import { IBlogCard } from "@/types/blog";
-import { ArrowRight, Clock, MessageCircle } from "lucide-react"; // [ปรับปรุง] เพิ่ม ArrowRight
+import { ArrowRight, Clock } from "lucide-react"; // [ปรับปรุง] เพิ่ม ArrowRight
 import Image from "next/image";
 import Link from "next/link";
-import { LikeButton } from "./LikeButton";
 
 function BlogCard({ blog }: { blog: IBlogCard }) {
-  const { isLiked, likeCount, isLiking, toggleLike } = useBlogLike(
-    blog.id,
-    blog.isLiked,
-    blog._count?.likes || 0
-  );
-
   return (
     <Card className="glass-card overflow-hidden group transition-all duration-300 ease-in-out hover:!shadow-2xl hover:!shadow-blue-500/20 hover:-translate-y-2">
       {/* Cover Image */}
       <div className="relative h-52 overflow-hidden">
         <Link href={`/blog/${blog.id}`} className="block h-full">
           <Image
+            priority={true}
             src={getImageUrl(blog.coverImage || "")}
             alt={blog.title}
             fill
-            className="object-cover transition-transform duration-500 ease-in-out group-hover:scale-110"
+            sizes="100%"
+            className=" object-cover transition-transform duration-500 ease-in-out group-hover:scale-110"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
         </Link>

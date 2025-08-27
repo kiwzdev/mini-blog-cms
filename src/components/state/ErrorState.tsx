@@ -1,5 +1,4 @@
 import { AlertCircle } from "lucide-react";
-import MainNavbar from "../Navbar";
 import { AlertDialog, AlertDialogDescription } from "../ui/alert-dialog";
 import { Button } from "../ui/button";
 import { SmartNavigation } from "../Navbar/SmartNavbar";
