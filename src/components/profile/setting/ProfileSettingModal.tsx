@@ -25,7 +25,7 @@ export const SettingProfileModal = ({
     allowComments: settings?.allowComments ?? true,
   });
 
-  const handleChange = (key: keyof IUserSettings, value: any) => {
+  const handleChange = (key: keyof IUserSettings, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
   };
 

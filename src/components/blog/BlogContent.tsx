@@ -5,9 +5,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CommentSection } from "@/components/blog/CommentSection";
 import { formatDate } from "@/lib/utils";
-import { ArrowLeft, Clock, Eye, Share2, Edit3 } from "lucide-react";
+import { ArrowLeft, Clock, Eye, Edit3 } from "lucide-react";
 import { IBlog } from "@/types/blog";
-import { isOwner } from "@/lib/auth";
 import { getImageUrl } from "@/lib/image";
 import { useBlogLike } from "@/hooks/useLike";
 import { useSession } from "next-auth/react";
@@ -56,7 +55,7 @@ export function BlogContent({ blog }: { blog: IBlog }) {
             </h1>
 
             {/* Edit Button - แสดงเฉพาะเจ้าของโพส */}
-            {isOwner(blog.author.id, session?.user?.id) && (
+            {blog.author.id === session?.user?.id && (
               <div className="flex-shrink-0">
                 <Button
                   asChild

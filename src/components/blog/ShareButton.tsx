@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Share2, Copy, Facebook, Twitter, Link } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Share2, Copy } from "lucide-react";
+import toast from "react-hot-toast";
 
 type ShareButtonProps = {
   url: string;
@@ -29,8 +29,8 @@ export function ShareButton({
     if (navigator.share) {
       try {
         await navigator.share(shareData);
-      } catch (error) {
-        console.log("Share cancelled");
+      } catch {
+        toast.error("Share cancelled");
       }
     } else {
       setIsOpen(!isOpen);

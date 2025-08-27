@@ -1,12 +1,13 @@
 import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/db";
 import { createSuccessResponse, createErrorResponse } from "@/lib/api-response";
 import { IUpdateProfileData, IUserSettings } from "@/types/user";
 import { isValidImageType, MAX_FILE_SIZE } from "@/helpers/uploadFile";
 import cloudinary from "@/lib/cloudinary";
 import { Prisma } from "@prisma/client";
+import { UploadApiResponse } from "cloudinary";
 
 type ParamsType = Promise<{ username: string }>;
 
@@ -33,7 +34,7 @@ function validateProfileData(data: IUpdateProfileData): string | null {
 // GET /api/users/[username]/profile - ดึงข้อมูลโปรไฟล์และสถิติ
 export async function GET(
   request: NextRequest,
-  { params }: { params: ParamsType }
+  { params }: { params: Promise<ParamsType> }
 ) {
   try {
     const { username } = await params;
@@ -93,7 +94,7 @@ export async function GET(
     }
 
     // Increment views เฉพาะเมื่อไม่ใช่ owner และไม่ skip
-    let viewsPromise: Promise<any> = Promise.resolve(null);
+    let viewsPromise: Promise<{ views: number } | null> = Promise.resolve(null);
     if (!isOwnProfile && !skipViewIncrement) {
       viewsPromise = prisma.user
         .update({
@@ -111,7 +112,7 @@ export async function GET(
     const updatedViews = await viewsPromise;
 
     let isFollowed;
-    if(!isOwnProfile){
+    if (!isOwnProfile) {
       isFollowed = await prisma.follow.findFirst({
         where: {
           followerId: session?.user?.id,
@@ -167,7 +168,7 @@ export async function GET(
 // PUT /api/users/[username]/profile - อัพเดทโปรไฟล์
 export async function PUT(
   request: NextRequest,
-  { params }: { params: ParamsType }
+  { params }: { params: Promise<ParamsType> }
 ) {
   try {
     const { username } = await params;
@@ -205,7 +206,7 @@ export async function PUT(
       phone: formData.get("phone") as string,
       birthDate: formData.get("birthDate") as string,
       settings: formData.get("settings") as string,
-      socialLinks: formData.get("socialLinks") as string,
+      socialLinks: JSON.parse(formData.get("socialLinks") as string),
       oldProfileImage: formData.get("oldProfileImage") as string,
     };
 
@@ -222,7 +223,7 @@ export async function PUT(
     }
 
     let profileImageUrl: string | undefined;
-    let imageUploadPromise: Promise<any> = Promise.resolve(null);
+    let imageUploadPromise: Promise<UploadApiResponse | null> = Promise.resolve(null);
 
     // Handle image upload
     if (profileImageFile && profileImageFile.size > 0) {
@@ -269,18 +270,14 @@ export async function PUT(
     }
 
     // Parse JSON fields
-    let parsedSocialLinks: any = undefined;
-    let parsedSettings: any = undefined;
+    let parsedSettings = undefined;
 
     try {
-      if (profileData.socialLinks) {
-        parsedSocialLinks = JSON.parse(profileData.socialLinks);
-      }
       if (profileData.settings) {
         parsedSettings = JSON.parse(profileData.settings);
         console.log("Parsed settings:", parsedSettings);
       }
-    } catch (parseError) {
+    } catch {
       return createErrorResponse({
         code: "INVALID_JSON",
         message: "Invalid JSON format in settings or social links",
@@ -301,7 +298,7 @@ export async function PUT(
     if (profileData.bio !== undefined) updateData.bio = profileData.bio;
     if (profileImageUrl !== undefined)
       updateData.profileImage = profileImageUrl;
-    if (parsedSocialLinks) updateData.socialLinks = parsedSocialLinks;
+    updateData.socialLinks = profileData.socialLinks;
     if (profileData.location !== undefined)
       updateData.location = profileData.location;
     if (profileData.jobTitle !== undefined)

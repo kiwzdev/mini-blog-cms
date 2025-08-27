@@ -1,8 +1,9 @@
 "use client";
 import { verifyEmail as verifyEmailAPI } from "@/api/auth";
-import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle, XCircle, Loader2, AlertCircle } from "lucide-react";
+import Loading from "@/components/Loading";
 
 type VerificationStatus =
   | "loading"
@@ -11,15 +12,16 @@ type VerificationStatus =
   | "expired"
   | "already_verified";
 
-export default function VerifyPage() {
+function VerifyEmail() {
   const [status, setStatus] = useState<VerificationStatus>("loading");
   const [message, setMessage] = useState<string | undefined>("กำลังตรวจสอบ...");
   const [countdown, setCountdown] = useState<number>(3);
   const searchParams = useSearchParams();
+  const params = useParams<{ token: string }>();
+  const token = params.token;
   const router = useRouter();
 
   useEffect(() => {
-    const token = searchParams.get("token");
 
     if (!token) {
       setStatus("error");
@@ -183,5 +185,13 @@ export default function VerifyPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={<Loading />}>
+      <VerifyEmail />
+    </Suspense>
   );
 }

@@ -38,7 +38,7 @@ const validatePassword = (
   return { isValid: true };
 };
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<Response> {
   try {
     // Parse and validate request body
     const body = await req.json();
@@ -174,7 +174,7 @@ export async function POST(req: NextRequest) {
 }
 
 // Optional: You might want to add a GET endpoint to validate token before showing reset form
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest): Promise<Response> {
   try {
     const { searchParams } = new URL(req.url);
     const token = searchParams.get("token");

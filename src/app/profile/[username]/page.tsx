@@ -126,7 +126,7 @@ export default function ProfilePage() {
 
         const cleanedSocialLinks = Object.fromEntries(
           Object.entries(socialLinks || {}).filter(
-            ([_, value]) => value && String(value).trim()
+            ([value]) => value && String(value).trim()
           )
         );
 

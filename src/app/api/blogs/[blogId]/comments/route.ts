@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { createErrorResponse, createSuccessResponse } from "@/lib/api-response";
 import prisma from "@/lib/db";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import { IComment } from "@/types/blog";
 
 type ParamsType = Promise<{ blogId: string }>;
@@ -38,7 +38,7 @@ async function checkBlogExists(blogId: string): Promise<boolean> {
 // GET /api/blogs/{blogId}/comments - Get all comments for a blog
 export async function GET(
   request: NextRequest,
-  { params }: { params: ParamsType }
+  { params }: { params: Promise<ParamsType> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -143,7 +143,7 @@ export async function GET(
 // POST /api/blogs/{blogId}/comments - Create a new comment
 export async function POST(
   request: NextRequest,
-  { params }: { params: ParamsType }
+  { params }: { params: Promise<ParamsType> }
 ) {
   try {
     // ✅ 7. Early auth check
@@ -247,7 +247,7 @@ export async function POST(
 // TODO
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: ParamsType }
+  { params }: { params: Promise<ParamsType>}
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -294,7 +294,6 @@ export async function DELETE(
     });
 
     return createSuccessResponse({
-      data: null,
       message: "Comment deleted successfully",
     });
   } catch (error) {

@@ -70,10 +70,12 @@ const ProfileImageUpload = ({
     <div className="relative">
       <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden bg-gray-200 border-2 border-dashed border-gray-300 flex items-center justify-center">
         <Image
+          priority={true}
           src={previewUrl || getImageUrl(currentImage || "")}
           alt="Profile"
           className="w-full h-full object-cover rounded-full border-1"
           fill
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         />
       </div>
       <div className="absolute -bottom-1 -right-1 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs cursor-pointer">
@@ -168,23 +170,60 @@ export const EditProfileModal = ({
     { key: "bio", label: "Bio", rows: 3, maxLength: 300 },
     { key: "jobTitle", label: "ตำแหน่งงาน" },
     { key: "company", label: "บริษัท" },
-    { key: "education", label: "การศึกษา", placeholder: "เช่น มหาวิทยาลัย, ปริญญา" },
+    {
+      key: "education",
+      label: "การศึกษา",
+      placeholder: "เช่น มหาวิทยาลัย, ปริญญา",
+    },
     { key: "location", label: "ที่อยู่" },
     { key: "email", label: "อีเมล", type: "email" },
     { key: "phone", label: "เบอร์โทรศัพท์", type: "tel" },
-    { key: "coverImage", label: "Cover Image URL", type: "url", placeholder: "https://" },
+    {
+      key: "coverImage",
+      label: "Cover Image URL",
+      type: "url",
+      placeholder: "https://",
+    },
   ];
 
   // Social Links
   const socialFields = [
     { key: "website", label: "Website", placeholder: "https://" },
-    { key: "github", label: "GitHub", placeholder: "https://github.com/username" },
-    { key: "twitter", label: "Twitter", placeholder: "https://twitter.com/username" },
-    { key: "linkedin", label: "LinkedIn", placeholder: "https://linkedin.com/in/username" },
-    { key: "instagram", label: "Instagram", placeholder: "https://instagram.com/username" },
-    { key: "facebook", label: "Facebook", placeholder: "https://facebook.com/username" },
-    { key: "youtube", label: "YouTube", placeholder: "https://youtube.com/@username" },
-    { key: "tiktok", label: "TikTok", placeholder: "https://tiktok.com/@username" },
+    {
+      key: "github",
+      label: "GitHub",
+      placeholder: "https://github.com/username",
+    },
+    {
+      key: "twitter",
+      label: "Twitter",
+      placeholder: "https://twitter.com/username",
+    },
+    {
+      key: "linkedin",
+      label: "LinkedIn",
+      placeholder: "https://linkedin.com/in/username",
+    },
+    {
+      key: "instagram",
+      label: "Instagram",
+      placeholder: "https://instagram.com/username",
+    },
+    {
+      key: "facebook",
+      label: "Facebook",
+      placeholder: "https://facebook.com/username",
+    },
+    {
+      key: "youtube",
+      label: "YouTube",
+      placeholder: "https://youtube.com/@username",
+    },
+    {
+      key: "tiktok",
+      label: "TikTok",
+      placeholder: "https://tiktok.com/@username",
+    },
   ];
 
   if (!isOpen) return null;
@@ -234,7 +273,11 @@ export const EditProfileModal = ({
                     key={field.key}
                     label={field.label}
                     type="url"
-                    value={formData.socialLinks[field.key as keyof typeof formData.socialLinks]}
+                    value={
+                      formData.socialLinks[
+                        field.key as keyof typeof formData.socialLinks
+                      ]
+                    }
                     onChange={(value) =>
                       setFormData({
                         ...formData,

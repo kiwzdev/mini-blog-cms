@@ -8,7 +8,7 @@ interface VerifyEmailRequest {
   token: string;
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest) : Promise<Response>{
   try {
     // Parse and validate request body
     const body = await req.json();
@@ -188,7 +188,7 @@ export async function POST(req: NextRequest) {
 }
 
 // Optional: Add GET endpoint to check token validity before verification
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest): Promise<Response> {
   try {
     const { searchParams } = new URL(req.url);
     const token = searchParams.get("token");

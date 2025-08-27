@@ -56,10 +56,6 @@ export const useBlogList = () => {
 
   // Auto fetch when non-search filters change
   useEffect(() => {
-    // แยก search filter ออกจาก filters อื่น ๆ
-    const { search, ...otherFilters } = filters;
-    const otherFiltersString = JSON.stringify(otherFilters);
-
     // fetch เฉพาะเมื่อ filter อื่น ๆ เปลี่ยน (ไม่รวม search)
     fetchBlogs(1, filters, true);
   }, [filters.category, filters.status, filters.dateRange, fetchBlogs]);

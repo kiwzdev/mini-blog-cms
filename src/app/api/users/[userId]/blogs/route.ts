@@ -1,7 +1,7 @@
 // app/api/users/[userId]/blogs/route.ts
 import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/db";
 import { createSuccessResponse, createErrorResponse } from "@/lib/api-response";
 import { IBlogCard } from "@/types/blog";
@@ -90,7 +90,7 @@ function buildOrderByClause(
 // GET /api/users/[userId]/blogs - ดึง blog พร้อม pagination และ filters
 export async function GET(
   request: NextRequest,
-  { params }: { params: ParamsType }
+  { params }: { params: Promise<ParamsType> }
 ) {
   try {
     const { userId } = await params;

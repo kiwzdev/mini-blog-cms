@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { MessageCircle, Send } from "lucide-react";
 import { useBlogComment } from "@/hooks/useComment";
-import { useCommentLike } from "@/hooks/useLike";
 import { IComment } from "@/types/blog";
 import { useSession } from "next-auth/react";
 import { useConfirm } from "@/hooks/useConfirm";

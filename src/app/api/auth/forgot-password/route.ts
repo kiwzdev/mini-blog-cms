@@ -1,4 +1,5 @@
 // app/api/auth/forgot-password/route.ts
+
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
@@ -16,7 +17,8 @@ const validateEmail = (email: string): boolean => {
   return emailRegex.test(email);
 };
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<NextResponse> {
+  
   try {
     // Parse and validate request body
     const body = await req.json();
@@ -113,11 +115,4 @@ export async function POST(req: NextRequest) {
   } finally {
     await prisma.$disconnect();
   }
-}
-
-// Optional: Add rate limiting middleware or check
-// You might want to add this to prevent abuse
-export async function middleware(req: NextRequest) {
-  // Rate limiting logic here
-  // Example: max 5 requests per hour per IP
 }

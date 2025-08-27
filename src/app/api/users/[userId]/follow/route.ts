@@ -1,4 +1,4 @@
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import { createErrorResponse, createSuccessResponse } from "@/lib/api-response";
 import prisma from "@/lib/db";
 import { getServerSession } from "next-auth";
@@ -10,7 +10,7 @@ type ParamsType = Promise<{ userId: string }>;
 // POST /api/users/[userId]/follow - Toggle follow user
 export async function POST(
   request: NextRequest,
-  { params }: { params: ParamsType }
+  { params }: { params: Promise<ParamsType> }
 ) {
   try {
     const { userId } = await params;
@@ -186,7 +186,7 @@ export async function POST(
 // GET /api/users/[userId]/follow - Get follow status (bonus optimization)
 export async function GET(
   request: NextRequest,
-  { params }: { params: ParamsType }
+  { params }: { params: Promise<ParamsType> }
 ) {
   try {
     const { userId } = await params;

@@ -1,7 +1,7 @@
 // app/api/users/[userId]/comment/route.ts
 import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/db";
 import { createSuccessResponse, createErrorResponse } from "@/lib/api-response";
 import { IComment } from "@/types/blog";
@@ -24,7 +24,7 @@ function validateContent(content: string): string | null {
 // POST /api/users/[userId]/comment - Create comment on user profile
 export async function POST(
   request: NextRequest,
-  { params }: { params: ParamsType }
+  { params }: { params: Promise<ParamsType> }
 ) {
   try {
     const { userId } = await params;
@@ -184,7 +184,7 @@ export async function POST(
 // GET /api/users/[userId]/comment - Get user profile comments (bonus optimization)
 export async function GET(
   request: NextRequest,
-  { params }: { params: ParamsType }
+  { params }: { params: Promise<ParamsType> }
 ) {
   try {
     const { userId } = await params;
