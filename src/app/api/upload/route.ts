@@ -6,7 +6,7 @@ import { createErrorResponse, createSuccessResponse } from "@/lib/api-response";
 import { isValidImageType, MAX_FILE_SIZE } from "@/helpers/uploadFile";
 
 // Upload File - Optimized
-export async function POST(req: NextRequest) : Promise<Response>{
+export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File;
@@ -150,7 +150,7 @@ export async function POST(req: NextRequest) : Promise<Response>{
 }
 
 // Delete File - Optimized with better error handling
-export async function DELETE(req: NextRequest): Promise<Response> {
+export async function DELETE(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const imageUrl = searchParams.get("url");

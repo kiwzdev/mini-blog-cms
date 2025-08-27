@@ -107,7 +107,7 @@ const validatePassword = (
   return { isValid: true };
 };
 
-export async function POST(req: NextRequest) : Promise<Response>{
+export async function POST(req: NextRequest) {
   try {
     // Parse and validate request body
     const body = await req.json();
@@ -298,7 +298,7 @@ export async function POST(req: NextRequest) : Promise<Response>{
 }
 
 // Optional: Add GET endpoint to check username/email availability
-export async function GET(req: NextRequest): Promise<Response> {
+export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const username = searchParams.get("username");
